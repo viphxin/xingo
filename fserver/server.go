@@ -5,7 +5,8 @@ import (
 	"github.com/viphxin/xingo/logger"
 	"github.com/viphxin/xingo/utils"
 	"net"
-	_ "time"
+	"time"
+	"github.com/viphxin/xingo/timer"
 )
 
 func init() {
@@ -81,4 +82,41 @@ func (this *Server) Stop() {
 func (this *Server) AddRouter(router interface{}) {
 	logger.Info("AddRouter")
 	fnet.MsgHandleObj.AddRouter(router)
+}
+
+func (this *Server) CallLater(durations time.Duration, f func(v ...interface{}), args ...interface{}){
+	delayTask := timer.NewTimer(durations, f, args)
+	delayTask.Run()
+}
+
+func (this *Server) CallWhen(ts string, f func(v ...interface{}), args ...interface{}){
+	loc, err_loc := time.LoadLocation("Local")
+	if err_loc != nil{
+		logger.Error(err_loc)
+		return
+	}
+	t, err := time.ParseInLocation("2006-01-02 15:04:05", ts, loc)
+	now := time.Now()
+	//logger.Info(t)
+	//logger.Info(now)
+	//logger.Info(now.Before(t) == true)
+	if err == nil{
+		if now.Before(t){
+			this.CallLater(t.Sub(now), f, args...)
+		}else{
+			logger.Error("CallWhen time before now")
+		}
+	}else{
+		logger.Error(err)
+	}
+}
+
+func (this *Server)CallLoop(durations time.Duration, f func(v ...interface{}), args ...interface{}){
+	go func() {
+		delayTask := timer.NewTimer(durations, f, args)
+		for {
+			time.Sleep(delayTask.GetDurations())
+			delayTask.GetFunc().Call()
+		}
+	}()
 }
