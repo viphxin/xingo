@@ -64,7 +64,12 @@ func (this *Server) Start() {
 			if err != nil {
 				logger.Error(err)
 			}
-			go this.handleConnection(conn)
+			//max client exceed
+			if fnet.ConnectionManager.Len() >= utils.GlobalObject.MaxConn{
+				conn.Close()
+			}else{
+				go this.handleConnection(conn)
+			}
 		}
 	}()
 }

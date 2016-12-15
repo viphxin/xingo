@@ -15,7 +15,7 @@ func (this *ConnectionMsg) Add(conn *Connection) {
 	this.conMrgLock.Lock()
 	defer this.conMrgLock.Unlock()
 	this.connections[conn.SessionId] = conn
-	logger.Info(this.connections)
+	logger.Info(len(this.connections))
 }
 
 func (this *ConnectionMsg) Remove(conn *Connection) error {
@@ -24,7 +24,7 @@ func (this *ConnectionMsg) Remove(conn *Connection) error {
 	_, ok := this.connections[conn.SessionId]
 	if ok {
 		delete(this.connections, conn.SessionId)
-		logger.Info(this.connections)
+		logger.Info(len(this.connections))
 		return nil
 	} else {
 		return errors.New("not found!!")
@@ -40,6 +40,10 @@ func (this *ConnectionMsg) Get(sid uint32) (*Connection, error) {
 	} else {
 		return nil, errors.New("not found!!")
 	}
+}
+
+func (this *ConnectionMsg) Len() int{
+	return len(this.connections)
 }
 
 var ConnectionManager *ConnectionMsg

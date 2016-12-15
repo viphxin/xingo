@@ -3,6 +3,8 @@ package utils
 import (
 	"github.com/viphxin/xingo/iface"
 	"github.com/viphxin/xingo/logger"
+	"encoding/json"
+	"io/ioutil"
 )
 
 type GlobalObj struct {
@@ -44,5 +46,16 @@ func init() {
 		FrameSpeed:     30,
 		OnConnectioned: func(fconn iface.Iconnection) {},
 		OnClosed:       func(fconn iface.Iconnection) {},
+	}
+	//读取用户自定义配置
+	data, err := ioutil.ReadFile("conf/server.json")
+	if err != nil {
+		logger.Fatal(err)
+	}
+	err = json.Unmarshal(data, &GlobalObject)
+	if err != nil {
+		logger.Fatal(err)
+	} else {
+		logger.Info("load conf successful!!!")
 	}
 }
