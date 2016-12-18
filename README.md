@@ -36,4 +36,5 @@ Data  []byte 数据<br>
   例如：msgId =1 则会寻找FightingRouter中的Func_1的方法从进行处理<br>
   具体使用请参考项目（也是xingo的demo（帧同步服务器））：<br>
   https://github.com/viphxin/fighting<br>
+  mmo demo: https://git.oschina.net/viphxin/xingo_demo
   
