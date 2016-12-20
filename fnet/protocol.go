@@ -168,10 +168,18 @@ func (this *Protocol) StartReadThread(fconn iface.Iconnection) {
 		}
 
 		logger.Debug(fmt.Sprintf("msg id :%d, data len: %d", pkgHead.MsgId, pkgHead.Len))
-		MsgHandleObj.DoMsg(&PkgAll{
-			Pdata: pkgHead,
-			Fconn: fconn,
-		})
+		if utils.GlobalObject.IsUsePool{
+			MsgHandleObj.DoMsg(&PkgAll{
+				Pdata: pkgHead,
+				Fconn: fconn,
+			})
+		}else{
+			MsgHandleObj.DoMsg2(&PkgAll{
+				Pdata: pkgHead,
+				Fconn: fconn,
+			})
+		}
+
 	}
 }
 

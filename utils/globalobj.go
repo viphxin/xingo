@@ -22,6 +22,7 @@ type GlobalObj struct {
 	LogLevel       logger.LEVEL
 	SetToConsole   bool
 	PoolSize       int32
+	IsUsePool      bool
 	MaxWorkerLen   int32
 	MaxSendChanLen int32
 	FrameSpeed     uint8
@@ -41,6 +42,7 @@ func init() {
 		LogLevel:       logger.ERROR,
 		SetToConsole:   true,
 		PoolSize:       10,
+		IsUsePool:      true,
 		MaxWorkerLen:   1024 * 2,
 		MaxSendChanLen: 1024,
 		FrameSpeed:     30,

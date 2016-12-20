@@ -51,15 +51,18 @@ func (this *Server) handleConnection(conn *net.TCPConn) {
 
 func (this *Server) Start() {
 	go func() {
-		//init workpool
-		fnet.MsgHandleObj.InitWorkerPool(10)
+		if utils.GlobalObject.IsUsePool{
+			//init workpool
+			fnet.MsgHandleObj.InitWorkerPool(int(utils.GlobalObject.PoolSize))
+		}
+
 		ln, err := net.ListenTCP("tcp", &net.TCPAddr{
 			Port: this.Port,
 		})
 		if err != nil {
 			logger.Error(err)
 		}
-		logger.Info("start server...")
+		logger.Info("start xingo server...")
 		for {
 			conn, err := ln.AcceptTCP()
 			if err != nil {
@@ -76,7 +79,7 @@ func (this *Server) Start() {
 }
 
 func (this *Server) Stop() {
-	logger.Info("Stop Server!!!")
+	logger.Info("stop xingo server!!!")
 }
 
 func (this *Server) AddRouter(router interface{}) {
