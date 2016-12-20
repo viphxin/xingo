@@ -19,6 +19,7 @@ Data  []byte 数据<br>
   LogLevel:       logger.ERROR,//日志级别<br>
   SetToConsole:   true,//是否输出到console<br>
   PoolSize:       10,//api接口工作线程数量<br>
+  IsUsePool:      true,//是否使用worker pool false 每个请求开启单独的协程处理<br>
   MaxWorkerLen:   1024 * 2,//任务缓冲池大小<br>
   MaxSendChanLen: 1024,//发送队列从缓冲池<br>
   FrameSpeed:     30,//未使用<br>
