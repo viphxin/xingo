@@ -1,18 +1,12 @@
 package iface
 
-import (
-	"net"
-)
+import "net"
 
-type Iconnection interface {
+type Iclient interface {
 	Start()
-	Stop()
+	Stop(bool)
 	GetConnection() *net.TCPConn
-	GetSessionId() uint32
 	Send([]byte) error
-	SendBuff([]byte) error
-	RemoteAddr() net.Addr
-	LostConnection()
 	GetProperty(string) (interface{}, error)
 	SetProperty(string, interface{})
 	RemoveProperty(string)

@@ -1,9 +1,21 @@
 package iface
 
-type IProtocol interface {
+type IClientProtocol interface {
+	OnConnectionMade(fconn Iclient)
+	OnConnectionLost(fconn Iclient)
+	StartReadThread(fconn Iclient)
+	InitWorker(int32)
+	AddRpcRouter(interface{})
+	GetMsgHandle() Imsghandle
+	GetDataPack() Idatapack
+}
+
+type IServerProtocol interface {
 	OnConnectionMade(fconn Iconnection)
 	OnConnectionLost(fconn Iconnection)
-	Unpack(data []byte)
-	Pack(hdata interface{}, data interface{}) ([]byte, error)
 	StartReadThread(fconn Iconnection)
+	InitWorker(int32)
+	AddRpcRouter(interface{})
+	GetMsgHandle() Imsghandle
+	GetDataPack() Idatapack
 }

@@ -2,28 +2,30 @@ package fnet
 
 import (
 	"errors"
+	"fmt"
+	"github.com/viphxin/xingo/iface"
 	"github.com/viphxin/xingo/logger"
 	"sync"
 )
 
-type ConnectionMsg struct {
-	connections map[uint32]*Connection
+type ConnectionMgr struct {
+	connections map[uint32]iface.Iconnection
 	conMrgLock  sync.RWMutex
 }
 
-func (this *ConnectionMsg) Add(conn *Connection) {
+func (this *ConnectionMgr) Add(conn iface.Iconnection) {
 	this.conMrgLock.Lock()
 	defer this.conMrgLock.Unlock()
-	this.connections[conn.SessionId] = conn
-	logger.Info(len(this.connections))
+	this.connections[conn.GetSessionId()] = conn
+	logger.Debug(fmt.Sprintf("Total connection: %d", len(this.connections)))
 }
 
-func (this *ConnectionMsg) Remove(conn *Connection) error {
+func (this *ConnectionMgr) Remove(conn iface.Iconnection) error {
 	this.conMrgLock.Lock()
 	defer this.conMrgLock.Unlock()
-	_, ok := this.connections[conn.SessionId]
+	_, ok := this.connections[conn.GetSessionId()]
 	if ok {
-		delete(this.connections, conn.SessionId)
+		delete(this.connections, conn.GetSessionId())
 		logger.Info(len(this.connections))
 		return nil
 	} else {
@@ -32,7 +34,7 @@ func (this *ConnectionMsg) Remove(conn *Connection) error {
 
 }
 
-func (this *ConnectionMsg) Get(sid uint32) (*Connection, error) {
+func (this *ConnectionMgr) Get(sid uint32) (iface.Iconnection, error) {
 	v, ok := this.connections[sid]
 	if ok {
 		delete(this.connections, sid)
@@ -42,14 +44,12 @@ func (this *ConnectionMsg) Get(sid uint32) (*Connection, error) {
 	}
 }
 
-func (this *ConnectionMsg) Len() int{
+func (this *ConnectionMgr) Len() int {
 	return len(this.connections)
 }
 
-var ConnectionManager *ConnectionMsg
-
-func init() {
-	ConnectionManager = &ConnectionMsg{
-		connections: make(map[uint32]*Connection),
+func NewConnectionMgr() *ConnectionMgr {
+	return &ConnectionMgr{
+		connections: make(map[uint32]iface.Iconnection),
 	}
 }
