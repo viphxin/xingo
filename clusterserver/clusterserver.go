@@ -168,14 +168,20 @@ func (this *ClusterServer) StartClusterServer() {
 
 	logger.Info("xingo cluster start success.")
 	// close
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
-	<-c
+	this.WaitSignal()
 	this.MasterObj.Stop(true)
 	if this.RootServer != nil {
 		this.RootServer.Stop()
 	}
 	logger.Info("xingo cluster stoped.")
+}
+
+func (this *ClusterServer) WaitSignal() {
+	// close
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, os.Kill)
+	sig := <-c
+	logger.Info(fmt.Sprintf("server exit. signal: [%s]", sig))
 }
 
 func (this *ClusterServer) ConnectToMaster() {

@@ -1,6 +1,7 @@
 package fserver
 
 import (
+	"fmt"
 	"github.com/viphxin/xingo/fnet"
 	"github.com/viphxin/xingo/iface"
 	"github.com/viphxin/xingo/logger"
@@ -130,7 +131,7 @@ func (this *Server) WaitSignal() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
 	sig := <-c
-	logger.Info("=======", sig)
+	logger.Info(fmt.Sprintf("server exit. signal: [%s]", sig))
 	this.Stop()
 }
 
