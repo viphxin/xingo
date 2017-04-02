@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/viphxin/xingo/logger"
+	"github.com/viphxin/xingo/utils"
 )
 
 type PkgData struct {
@@ -40,7 +41,8 @@ func (this *PBDataPack) Unpack(headdata []byte) (interface{}, error) {
 	}
 
 	// 封包太大
-	if head.Len > MaxPacketSize {
+	if (utils.GlobalObject.MaxPacketSize > 0 && head.Len > utils.GlobalObject.MaxPacketSize) ||
+		(utils.GlobalObject.MaxPacketSize == 0 && head.Len > MaxPacketSize) {
 		return nil, packageTooBig
 	}
 

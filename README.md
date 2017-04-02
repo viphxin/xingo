@@ -1,5 +1,5 @@
 # xingo_cluster
-==================
+
 xingo golang游戏开发交流群：535378240<br>
 文档地址: http://www.w3cschool.cn/xingo/
 ```text
@@ -63,16 +63,20 @@ Data  []byte 数据<br>
   MaxWorkerLen:   1024 * 2,//任务缓冲池大小<br>
   MaxSendChanLen: 1024,//发送队列从缓冲池<br>
   FrameSpeed:     30,//未使用<br>
+  MaxPacketSize:  1024,//协议数据包最大包体大小<br>
+  FrequencyControl: 100/s,//  100/h(每小时一百个包), 100/m(每分钟一百个包), 100/s(每秒一百个包)<br>
   OnConnectioned: func(fconn iface.Iconnection) {},//链接建立事件回调<br>
   OnClosed:       func(fconn iface.Iconnection) {},//链接断开事件回调<br>
+  OnServerStop:   func(), //服务器停服回调
+  Protoc:         iface.IServerProtocol//socket数据pack和unpack的实现，可以通过设置该值重载服务器协议
   
   如何使用？<br>
   只需要一步，添加消息路由：<br>
   s := fserver.NewServer()<br>
-  //add api ---------------start<br>
-	FightingRouterObj := &api.FightingRouter{}<br>
-	s.AddRouter(FightingRouterObj)<br>
-	//add api ---------------end<br>
+    //add api ---------------start<br>
+    FightingRouterObj := &api.FightingRouter{}<br>
+    s.AddRouter(FightingRouterObj)<br>
+    //add api ---------------end<br>
   xingo会自动注册FightingRouter中的方法处理对应消息<br>
   例如：msgId =1 则会寻找FightingRouter中的Func_1的方法从进行处理<br>
   具体使用请参考项目：<br>

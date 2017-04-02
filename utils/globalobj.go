@@ -5,6 +5,8 @@ import (
 	"github.com/viphxin/xingo/iface"
 	"github.com/viphxin/xingo/logger"
 	"io/ioutil"
+	"strconv"
+	"strings"
 )
 
 type GlobalObj struct {
@@ -22,20 +24,37 @@ type GlobalObj struct {
 	TcpPort                int
 	MaxConn                int
 	//log
-	LogPath        string
-	LogName        string
-	MaxLogNum      int32
-	MaxFileSize    int64
-	LogFileUnit    logger.UNIT
-	LogLevel       logger.LEVEL
-	SetToConsole   bool
-	LogFileType    int32
-	PoolSize       int32
-	IsUsePool      bool
-	MaxWorkerLen   int32
-	MaxSendChanLen int32
-	FrameSpeed     uint8
-	Name           string
+	LogPath          string
+	LogName          string
+	MaxLogNum        int32
+	MaxFileSize      int64
+	LogFileUnit      logger.UNIT
+	LogLevel         logger.LEVEL
+	SetToConsole     bool
+	LogFileType      int32
+	PoolSize         int32
+	IsUsePool        bool
+	MaxWorkerLen     int32
+	MaxSendChanLen   int32
+	FrameSpeed       uint8
+	Name             string
+	MaxPacketSize    uint32
+	FrequencyControl string //  100/h, 100/m, 100/s
+}
+
+func (this *GlobalObj) GetFrequency() (int, string) {
+	fc := strings.Split(this.FrequencyControl, "/")
+	if len(fc) != 2 {
+		return 0, ""
+	} else {
+		fc0_int, err := strconv.Atoi(fc[0])
+		if err == nil {
+			return fc0_int, fc[1]
+		} else {
+			logger.Error("FrequencyControl params error: ", this.FrequencyControl)
+			return 0, ""
+		}
+	}
 }
 
 var GlobalObject *GlobalObj

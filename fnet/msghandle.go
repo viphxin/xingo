@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/viphxin/xingo/logger"
 	"github.com/viphxin/xingo/utils"
-	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
@@ -28,9 +27,11 @@ func NewMsgHandle() *MsgHandle {
 	}
 }
 
+//一致性路由,保证同一连接的数据转发给相同的goroutine
 func (this *MsgHandle) DeliverToMsgQueue(pkg interface{}) {
 	data := pkg.(*PkgAll)
-	index := rand.Int31n(utils.GlobalObject.PoolSize)
+	//index := rand.Int31n(utils.GlobalObject.PoolSize)
+	index := data.Fconn.GetSessionId() % uint32(utils.GlobalObject.PoolSize)
 	taskQueue := this.TaskQueue[index]
 	logger.Debug(fmt.Sprintf("add to pool : %d", index))
 	taskQueue <- data

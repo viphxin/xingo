@@ -35,7 +35,7 @@ func NewConnection(conn *net.TCPConn, sessionId uint32, protoc iface.IServerProt
 		ExtSendChan:  make(chan bool, 1),
 	}
 	//set  connection time
-	fconn.SetProperty("ctime", time.Since(time.Now()))
+	fconn.SetProperty("xingo_ctime", time.Since(time.Now()))
 	return fconn
 }
 
