@@ -91,7 +91,7 @@ func (this *MsgHandle) StartWorkerLoop(poolSize int) {
 					//存在
 					st := time.Now()
 					//f.Call([]reflect.Value{reflect.ValueOf(data)})
-					utils.XingoTry(f, []reflect.Value{reflect.ValueOf(data)}, nil)
+					utils.XingoTry(f, []reflect.Value{reflect.ValueOf(data)}, func(err interface{}){logger.Error(err)})
 					logger.Debug(fmt.Sprintf("Api_%d cost total time: %f ms", data.Pdata.MsgId, time.Now().Sub(st).Seconds()*1000))
 				} else {
 					logger.Error(fmt.Sprintf("not found api:  %d", data.Pdata.MsgId))
