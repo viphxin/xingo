@@ -78,6 +78,12 @@ func (this *MsgHandle) AddRouter(router interface{}) {
 	// this.Apis[2].Call([]reflect.Value{reflect.ValueOf(&PkgAll{})})
 }
 
+func (this *MsgHandle)HandleError(err interface{}){
+        if err != nil{
+               logger.Error(err)
+        }
+}
+
 func (this *MsgHandle) StartWorkerLoop(poolSize int) {
 	for i := 0; i < poolSize; i += 1 {
 		c := make(chan *PkgAll, utils.GlobalObject.MaxWorkerLen)
@@ -91,7 +97,7 @@ func (this *MsgHandle) StartWorkerLoop(poolSize int) {
 					//存在
 					st := time.Now()
 					//f.Call([]reflect.Value{reflect.ValueOf(data)})
-					utils.XingoTry(f, []reflect.Value{reflect.ValueOf(data)}, func(err interface{}){logger.Error(err)})
+					utils.XingoTry(f, []reflect.Value{reflect.ValueOf(data)}, this.HandleError)
 					logger.Debug(fmt.Sprintf("Api_%d cost total time: %f ms", data.Pdata.MsgId, time.Now().Sub(st).Seconds()*1000))
 				} else {
 					logger.Error(fmt.Sprintf("not found api:  %d", data.Pdata.MsgId))

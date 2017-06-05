@@ -82,12 +82,12 @@ func NewClusterServer(name, path string) *ClusterServer {
 	utils.GlobalObject.OnClusterCClosed = DoCCConnectionLost
 	utils.GlobalObject.RpcCProtoc = cluster.NewRpcClientProtocol()
 
+	if utils.GlobalObject.IsUsePool {
+		//init rpc worker pool
+		utils.GlobalObject.RpcCProtoc.InitWorker(int32(utils.GlobalObject.PoolSize))
+	}
 	if GlobalClusterServer.Cconf.Servers[name].NetPort != 0 {
 		utils.GlobalObject.Protoc = fnet.NewProtocol()
-		if utils.GlobalObject.IsUsePool {
-			//init rpc worker pool
-			utils.GlobalObject.RpcCProtoc.InitWorker(int32(utils.GlobalObject.PoolSize))
-		}
 	} else {
 		utils.GlobalObject.RpcSProtoc = cluster.NewRpcServerProtocol()
 		utils.GlobalObject.Protoc = utils.GlobalObject.RpcSProtoc
@@ -110,14 +110,26 @@ func (this *ClusterServer) StartClusterServer() {
 	if ok {
 		if modules[0] != nil {
 			if len(serverconf.Http) > 0 || len(serverconf.Https) > 0 {
-				this.AddHttpRouter(modules[0])
+				for _, m := range modules[0].([]interface{}){
+                                   if m!= nil{
+					 this.AddHttpRouter(m)
+                                   }
+				}
 			} else {
-				this.AddRouter(modules[0])
+				for _, m := range modules[0].([]interface{}){
+                                     if m != nil{
+					  this.AddRouter(m)
+                                     }
+				}
 			}
 		}
 
 		if modules[1] != nil {
-			this.AddRpcRouter(modules[1])
+			for _, m := range modules[1].([]interface{}){
+                             if m != nil{
+				 this.AddRpcRouter(m)
+                             }
+			}
 		}
 	}
 
@@ -280,7 +292,13 @@ func (this *ClusterServer) GetRemote(name string) (*cluster.Child, error) {
 注册模块到分布式服务器
 */
 func (this *ClusterServer) AddModule(mname string, module interface{}, rpcmodule interface{}) {
-	this.modules[mname] = []interface{}{module, rpcmodule}
+	//this.modules[mname] = []interface{}{module, rpcmodule}
+	if _,ok := this.modules[mname]; ok{
+		this.modules[mname][0] = append(this.modules[mname][0].([]interface{}), module)
+		this.modules[mname][1] = append(this.modules[mname][1].([]interface{}), rpcmodule)
+	}else{
+		this.modules[mname] = []interface{}{[]interface{}{module}, []interface{}{rpcmodule}}
+	}
 }
 
 /*
