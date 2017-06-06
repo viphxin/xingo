@@ -88,6 +88,7 @@ func NewClusterServer(name, path string) *ClusterServer {
 	}
 	if GlobalClusterServer.Cconf.Servers[name].NetPort != 0 {
 		utils.GlobalObject.Protoc = fnet.NewProtocol()
+
 	} else {
 		utils.GlobalObject.RpcSProtoc = cluster.NewRpcServerProtocol()
 		utils.GlobalObject.Protoc = utils.GlobalObject.RpcSProtoc

@@ -50,6 +50,14 @@ const (
 )
 
 const (
+	debug_str         = "debug"
+	info_str          = "info"
+	warn_str          = "\033[036;1mwarn\033[036;0m"
+	error_str         = "\033[031;1merror\033[031;0m"
+	fatal_str         = "\033[031;1mfatal\033[031;0m"
+)
+
+const (
 	_ = iota
 	ROLLINGDAILY
 	ROLLINGFILE
@@ -167,9 +175,9 @@ func Debug(v ...interface{}) {
 
 	if logLevel <= DEBUG {
 		if logObj != nil {
-			logObj.lg.Output(2, fmt.Sprintln("debug", v))
+			logObj.lg.Output(2, fmt.Sprintln(debug_str, v))
 		}
-		console("debug", v)
+		console(debug_str, v)
 	}
 }
 func Info(v ...interface{}) {
@@ -183,9 +191,9 @@ func Info(v ...interface{}) {
 	}
 	if logLevel <= INFO {
 		if logObj != nil {
-			logObj.lg.Output(2, fmt.Sprintln("info", v))
+			logObj.lg.Output(2, fmt.Sprintln(info_str, v))
 		}
-		console("info", v)
+		console(info_str, v)
 	}
 }
 func Warn(v ...interface{}) {
@@ -200,9 +208,9 @@ func Warn(v ...interface{}) {
 
 	if logLevel <= WARN {
 		if logObj != nil {
-			logObj.lg.Output(2, fmt.Sprintln("warn", v))
+			logObj.lg.Output(2, fmt.Sprintln(warn_str, v))
 		}
-		console("warn", v)
+		console(warn_str, v)
 	}
 }
 func Error(v ...interface{}) {
@@ -216,9 +224,9 @@ func Error(v ...interface{}) {
 	}
 	if logLevel <= ERROR {
 		if logObj != nil {
-			logObj.lg.Output(2, fmt.Sprintln("error", v))
+			logObj.lg.Output(2, fmt.Sprintln(error_str, v))
 		}
-		console("error", v)
+		console(error_str, v)
 	}
 }
 func Fatal(v ...interface{}) {
@@ -232,9 +240,9 @@ func Fatal(v ...interface{}) {
 	}
 	if logLevel <= FATAL {
 		if logObj != nil {
-			logObj.lg.Output(2, fmt.Sprintln("fatal", v))
+			logObj.lg.Output(2, fmt.Sprintln(fatal_str, v))
 		}
-		console("fatal", v)
+		console(fatal_str, v)
 	}
 }
 
