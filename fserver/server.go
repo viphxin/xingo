@@ -21,17 +21,40 @@ func init() {
 }
 
 type Server struct {
+	Name          string
+	IPVersion     string
+	IP            string
 	Port          int
 	MaxConn       int
 	GenNum        uint32
 	connectionMgr iface.Iconnectionmgr
+	Protoc        iface.IServerProtocol
 }
 
 func NewServer() iface.Iserver {
 	s := &Server{
+		Name:          utils.GlobalObject.Name,
+		IPVersion:     "tcp4",
+		IP:            "0.0.0.0",
 		Port:          utils.GlobalObject.TcpPort,
 		MaxConn:       utils.GlobalObject.MaxConn,
 		connectionMgr: fnet.NewConnectionMgr(),
+		Protoc: utils.GlobalObject.Protoc,
+	}
+	utils.GlobalObject.TcpServer = s
+
+	return s
+}
+
+func NewTcpServer(name string, version string, ip string, port int, maxConn int, protoc iface.IServerProtocol) iface.Iserver {
+	s := &Server{
+		Name:          name,
+		IPVersion:     version,
+		IP:            ip,
+		Port:          port,
+		MaxConn:       maxConn,
+		connectionMgr: fnet.NewConnectionMgr(),
+		Protoc: protoc,
 	}
 	utils.GlobalObject.TcpServer = s
 
@@ -43,20 +66,31 @@ func (this *Server) handleConnection(conn *net.TCPConn) {
 	conn.SetNoDelay(true)
 	conn.SetKeepAlive(true)
 	// conn.SetDeadline(time.Now().Add(time.Minute * 2))
-	fconn := fnet.NewConnection(conn, this.GenNum, utils.GlobalObject.Protoc)
+	var fconn *fnet.Connection
+	if this.Protoc == nil{
+		fconn = fnet.NewConnection(conn, this.GenNum, utils.GlobalObject.Protoc)
+
+	}else{
+		fconn = fnet.NewConnection(conn, this.GenNum, this.Protoc)
+	}
+	fconn.SetProperty(fnet.XINGO_CONN_PROPERTY_NAME, this.Name)
 	fconn.Start()
 }
 
 func (this *Server) Start() {
+	utils.GlobalObject.TcpServers[this.Name] = this
 	go func() {
-		utils.GlobalObject.Protoc.InitWorker(utils.GlobalObject.PoolSize)
-		ln, err := net.ListenTCP("tcp", &net.TCPAddr{
-			Port: this.Port,
-		})
+		this.Protoc.InitWorker(utils.GlobalObject.PoolSize)
+		tcpAddr, err := net.ResolveTCPAddr(this.IPVersion, fmt.Sprintf("%s:%d", this.IP, this.Port))
+		if err != nil{
+			logger.Fatal("ResolveTCPAddr err: ", err)
+			return
+		}
+		ln, err := net.ListenTCP("tcp", tcpAddr)
 		if err != nil {
 			logger.Error(err)
 		}
-		logger.Info("start xingo server...")
+		logger.Info(fmt.Sprintf("start xingo server %s...", this.Name))
 		for {
 			conn, err := ln.AcceptTCP()
 			if err != nil {
@@ -81,7 +115,7 @@ func (this *Server) GetConnectionQueue() chan interface{} {
 }
 
 func (this *Server) Stop() {
-	logger.Info("stop xingo server!!!")
+	logger.Info("stop xingo server ", this.Name)
 	if utils.GlobalObject.OnServerStop != nil {
 		utils.GlobalObject.OnServerStop()
 	}
@@ -127,10 +161,8 @@ func (this *Server) CallLoop(durations time.Duration, f func(v ...interface{}), 
 }
 
 func (this *Server) WaitSignal() {
-	// close
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
-	sig := <-c
+	signal.Notify(utils.GlobalObject.ProcessSignalChan, os.Interrupt, os.Kill)
+	sig := <-utils.GlobalObject.ProcessSignalChan
 	logger.Info(fmt.Sprintf("server exit. signal: [%s]", sig))
 	this.Stop()
 }

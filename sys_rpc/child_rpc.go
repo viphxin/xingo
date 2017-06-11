@@ -5,6 +5,9 @@ import (
 	"github.com/viphxin/xingo/cluster"
 	"github.com/viphxin/xingo/clusterserver"
 	"github.com/viphxin/xingo/logger"
+	"time"
+	"github.com/viphxin/xingo/utils"
+	"os"
 )
 
 type ChildRpc struct {
@@ -17,4 +20,25 @@ func (this *ChildRpc) RootTakeProxy(request *cluster.RpcRequest) {
 	rname := request.Rpcdata.Args[0].(string)
 	logger.Info(fmt.Sprintf("root node %s online. connecting...", rname))
 	clusterserver.GlobalClusterServer.ConnectToRemote(rname)
+}
+
+/*
+关闭节点信号
+*/
+func (this *ChildRpc) CloseServer(request *cluster.RpcRequest){
+	delay := request.Rpcdata.Args[0].(float64)
+	logger.Warn("server close kickdown.", delay, "second...")
+	time.Sleep(time.Duration(delay)*time.Second)
+	utils.GlobalObject.ProcessSignalChan <- os.Kill
+}
+
+/*
+重新加载配置文件
+*/
+func (this *ChildRpc) ReloadConfig(request *cluster.RpcRequest){
+	delay := request.Rpcdata.Args[0].(float64)
+	logger.Warn("server ReloadConfig kickdown.", delay, "second...")
+	time.Sleep(time.Duration(delay)*time.Second)
+	clusterserver.GlobalClusterServer.Cconf.Reload()
+	logger.Info("reload config.")
 }

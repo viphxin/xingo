@@ -1,6 +1,11 @@
 package timer
 
-import "time"
+import (
+	"time"
+	"reflect"
+	"fmt"
+	"github.com/viphxin/xingo/logger"
+)
 
 type DelayCall struct {
 	f func(v ...interface{})
@@ -8,7 +13,18 @@ type DelayCall struct {
 }
 
 func (this *DelayCall)Call(){
+	defer func(){
+		if err := recover(); err != nil{
+			logger.Error(this.String(), "Call Error: ", err)
+		}
+	}()
+
 	this.f(this.args...)
+}
+
+func (this *DelayCall)String() string{
+	funcType := reflect.TypeOf(this.f)
+	return fmt.Sprintf("DelayCall function: %s. args: %v.", funcType.Name(), this.args)
 }
 
 type Timer struct {

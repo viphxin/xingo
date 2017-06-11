@@ -92,16 +92,30 @@ func (this *RpcMsgHandle) AddRouter(router interface{}) {
 }
 
 func (this *RpcMsgHandle) StartWorkerLoop(poolSize int) {
-	for i := 0; i < poolSize; i += 1 {
-		c := make(chan *RpcRequest, utils.GlobalObject.MaxWorkerLen)
-		this.TaskQueue[i] = c
-		go func(index int, taskQueue chan *RpcRequest) {
-			logger.Info(fmt.Sprintf("init rpc thread pool %d.", index))
-			for {
-				request := <-taskQueue
-				this.DoMsg(request)
+	if utils.GlobalObject.IsThreadSafeMode(){
+		this.TaskQueue[0] =  make(chan *RpcRequest, utils.GlobalObject.MaxWorkerLen)
+		go func(){
+			for{
+				select {
+				case rpcRequest := <- this.TaskQueue[0]:
+					this.DoMsg(rpcRequest)
+				case delayCall := <- utils.GlobalObject.GetSafeTimer().GetTriggerChannel():
+					delayCall.Call()
+				}
 			}
+		}()
+	}else{
+		for i := 0; i < poolSize; i += 1 {
+			c := make(chan *RpcRequest, utils.GlobalObject.MaxWorkerLen)
+			this.TaskQueue[i] = c
+			go func(index int, taskQueue chan *RpcRequest) {
+				logger.Info(fmt.Sprintf("init rpc thread pool %d.", index))
+				for {
+					request := <-taskQueue
+					this.DoMsg(request)
+				}
 
-		}(i, c)
+			}(i, c)
+		}
 	}
 }

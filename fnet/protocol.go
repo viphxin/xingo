@@ -140,7 +140,7 @@ func (this *Protocol) StartReadThread(fconn iface.Iconnection) {
 		}
 
 		logger.Debug(fmt.Sprintf("msg id :%d, data len: %d", pkg.MsgId, pkg.Len))
-		if utils.GlobalObject.IsUsePool {
+		if utils.GlobalObject.PoolSize > 0 {
 			this.msghandle.DeliverToMsgQueue(&PkgAll{
 				Pdata: pkg,
 				Fconn: fconn,

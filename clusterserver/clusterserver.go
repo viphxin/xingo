@@ -23,7 +23,9 @@ type ClusterServer struct {
 	ChildsMgr      *cluster.ChildMgr //root节点有
 	MasterObj      *fnet.TcpClient
 	httpServerMux  *http.ServeMux
+	NetServer      iface.Iserver
 	RootServer     iface.Iserver
+	TelnetServer   iface.Iserver
 	Cconf          *cluster.ClusterConf
 	modules        map[string][]interface{} //所有模块统一管理
 	sync.RWMutex
@@ -69,6 +71,7 @@ func NewClusterServer(name, path string) *ClusterServer {
 	if err != nil {
 		panic("cluster conf error!!!")
 	}
+
 	GlobalClusterServer = &ClusterServer{
 		Name:           name,
 		Cconf:          cconf,
@@ -77,26 +80,41 @@ func NewClusterServer(name, path string) *ClusterServer {
 		modules:        make(map[string][]interface{}, 0),
 		httpServerMux:  http.NewServeMux(),
 	}
+
+	serverconf, ok := GlobalClusterServer.Cconf.Servers[name]
+	if !ok {
+		panic(fmt.Sprintf("no server %s in clusterconf!!!", name))
+	}
+
 	utils.GlobalObject.Name = name
 	utils.GlobalObject.OnClusterClosed = DoCSConnectionLost
 	utils.GlobalObject.OnClusterCClosed = DoCCConnectionLost
 	utils.GlobalObject.RpcCProtoc = cluster.NewRpcClientProtocol()
 
-	if utils.GlobalObject.IsUsePool {
+	if utils.GlobalObject.PoolSize > 0 {
 		//init rpc worker pool
 		utils.GlobalObject.RpcCProtoc.InitWorker(int32(utils.GlobalObject.PoolSize))
 	}
-	if GlobalClusterServer.Cconf.Servers[name].NetPort != 0 {
+	if serverconf.NetPort > 0 {
 		utils.GlobalObject.Protoc = fnet.NewProtocol()
 
-	} else {
+	}
+	if serverconf.RootPort > 0 {
 		utils.GlobalObject.RpcSProtoc = cluster.NewRpcServerProtocol()
-		utils.GlobalObject.Protoc = utils.GlobalObject.RpcSProtoc
 	}
 
-	if GlobalClusterServer.Cconf.Servers[name].Log != "" {
-		utils.GlobalObject.LogName = GlobalClusterServer.Cconf.Servers[name].Log
+	if serverconf.Log != "" {
+		utils.GlobalObject.LogName = serverconf.Log
 		utils.ReSettingLog()
+	}
+
+	//telnet debug tool
+	if serverconf.DebugPort > 0{
+		if serverconf.Host != ""{
+			GlobalClusterServer.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", serverconf.Host, serverconf.DebugPort, 100, cluster.NewTelnetProtocol(serverconf.WriteList))
+		}else{
+			GlobalClusterServer.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", "127.0.0.1", serverconf.DebugPort, 100, cluster.NewTelnetProtocol(serverconf.WriteList))
+		}
 	}
 	return GlobalClusterServer
 }
@@ -109,27 +127,26 @@ func (this *ClusterServer) StartClusterServer() {
 	//自动发现注册modules api
 	modules, ok := this.modules[serverconf.Module]
 	if ok {
-		if modules[0] != nil {
-			if len(serverconf.Http) > 0 || len(serverconf.Https) > 0 {
-				for _, m := range modules[0].([]interface{}){
-                                   if m!= nil{
-					 this.AddHttpRouter(m)
-                                   }
-				}
-			} else {
-				for _, m := range modules[0].([]interface{}){
-                                     if m != nil{
-					  this.AddRouter(m)
-                                     }
+		//api
+		if serverconf.NetPort > 0 {
+			for _, m := range modules[0].([]interface{}){
+				if m != nil{
+					this.AddRouter(m)
 				}
 			}
 		}
-
-		if modules[1] != nil {
+		//http
+		if len(serverconf.Http) > 0 || len(serverconf.Https) > 0{
 			for _, m := range modules[1].([]interface{}){
-                             if m != nil{
-				 this.AddRpcRouter(m)
-                             }
+				if m != nil{
+					this.AddHttpRouter(m)
+				}
+			}
+		}
+		//rpc
+		for _, m := range modules[2].([]interface{}){
+			if m != nil{
+				this.AddRpcRouter(m)
 			}
 		}
 	}
@@ -169,13 +186,31 @@ func (this *ClusterServer) StartClusterServer() {
 	//tcp server
 	if serverconf.NetPort > 0 {
 		utils.GlobalObject.TcpPort = serverconf.NetPort
-		this.RootServer = fserver.NewServer()
-		this.RootServer.Start()
-	} else if serverconf.RootPort > 0 {
-		utils.GlobalObject.TcpPort = serverconf.RootPort
-		this.RootServer = fserver.NewServer()
+		if serverconf.Host != ""{
+			this.NetServer = fserver.NewTcpServer("xingocluster_net_server", "tcp4", serverconf.Host, serverconf.NetPort,
+				utils.GlobalObject.MaxConn, utils.GlobalObject.Protoc)
+		}else{
+			this.NetServer = fserver.NewTcpServer("xingocluster_net_server", "tcp4", serverconf.Host, serverconf.NetPort,
+				utils.GlobalObject.MaxConn, utils.GlobalObject.Protoc)
+		}
+		this.NetServer.Start()
+	}
+	if serverconf.RootPort > 0 {
+		if serverconf.Host != ""{
+			this.RootServer = fserver.NewTcpServer("xingocluster_root_server", "tcp4", serverconf.Host, serverconf.RootPort,
+				utils.GlobalObject.IntraMaxConn, utils.GlobalObject.RpcSProtoc)
+		}else{
+			this.RootServer = fserver.NewTcpServer("xingocluster_root_server", "tcp4", serverconf.Host, serverconf.RootPort,
+				utils.GlobalObject.IntraMaxConn, utils.GlobalObject.RpcSProtoc)
+		}
 		this.RootServer.Start()
 	}
+	//telnet
+	if this.TelnetServer != nil{
+		logger.Info(fmt.Sprintf("telnet tool start: %s:%d.", serverconf.Host, serverconf.DebugPort))
+		this.TelnetServer.Start()
+	}
+
 	//master
 	this.ConnectToMaster()
 
@@ -186,14 +221,20 @@ func (this *ClusterServer) StartClusterServer() {
 	if this.RootServer != nil {
 		this.RootServer.Stop()
 	}
+
+	if this.NetServer != nil {
+		this.NetServer.Stop()
+	}
+
+	if this.TelnetServer != nil{
+		this.TelnetServer.Stop()
+	}
 	logger.Info("xingo cluster stoped.")
 }
 
 func (this *ClusterServer) WaitSignal() {
-	// close
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
-	sig := <-c
+	signal.Notify(utils.GlobalObject.ProcessSignalChan, os.Interrupt, os.Kill)
+	sig := <-utils.GlobalObject.ProcessSignalChan
 	logger.Info(fmt.Sprintf("server exit. signal: [%s]", sig))
 }
 
@@ -240,9 +281,11 @@ func (this *ClusterServer) ConnectToRemote(rname string) {
 }
 
 func (this *ClusterServer) AddRouter(router interface{}) {
-	//add api ---------------start
-	utils.GlobalObject.Protoc.AddRpcRouter(router)
-	//add api ---------------end
+	if utils.GlobalObject.Protoc != nil{
+		//add api ---------------start
+		utils.GlobalObject.Protoc.AddRpcRouter(router)
+		//add api ---------------end
+	}
 }
 
 func (this *ClusterServer) AddRpcRouter(router interface{}) {
@@ -292,13 +335,14 @@ func (this *ClusterServer) GetRemote(name string) (*cluster.Child, error) {
 /*
 注册模块到分布式服务器
 */
-func (this *ClusterServer) AddModule(mname string, module interface{}, rpcmodule interface{}) {
+func (this *ClusterServer) AddModule(mname string, apimodule interface{},httpmodule interface{}, rpcmodule interface{}) {
 	//this.modules[mname] = []interface{}{module, rpcmodule}
 	if _,ok := this.modules[mname]; ok{
-		this.modules[mname][0] = append(this.modules[mname][0].([]interface{}), module)
-		this.modules[mname][1] = append(this.modules[mname][1].([]interface{}), rpcmodule)
+		this.modules[mname][0] = append(this.modules[mname][0].([]interface{}), apimodule)
+		this.modules[mname][1] = append(this.modules[mname][1].([]interface{}), httpmodule)
+		this.modules[mname][2] = append(this.modules[mname][2].([]interface{}), rpcmodule)
 	}else{
-		this.modules[mname] = []interface{}{[]interface{}{module}, []interface{}{rpcmodule}}
+		this.modules[mname] = []interface{}{[]interface{}{apimodule}, []interface{}{httpmodule}, []interface{}{rpcmodule}}
 	}
 }
 

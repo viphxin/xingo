@@ -85,7 +85,7 @@ func (this *RpcServerProtocol) StartReadThread(fconn iface.Iconnection) {
 				}
 
 				logger.Debug(fmt.Sprintf("rpc call. data len: %d. MsgType: %d", pkg.Len, int(rpcRequest.Rpcdata.MsgType)))
-				if utils.GlobalObject.IsUsePool && rpcRequest.Rpcdata.MsgType != RESPONSE {
+				if utils.GlobalObject.PoolSize > 0 && rpcRequest.Rpcdata.MsgType != RESPONSE {
 					this.rpcMsgHandle.DeliverToMsgQueue(rpcRequest)
 				} else {
 					this.rpcMsgHandle.DoMsgFromGoRoutine(rpcRequest)
@@ -166,7 +166,7 @@ func (this *RpcClientProtocol) StartReadThread(fconn iface.Iclient) {
 				}
 
 				logger.Debug(fmt.Sprintf("rpc call. data len: %d. MsgType: %d", pkg.Len, rpcRequest.Rpcdata.MsgType))
-				if utils.GlobalObject.IsUsePool && rpcRequest.Rpcdata.MsgType != RESPONSE {
+				if utils.GlobalObject.PoolSize > 0 && rpcRequest.Rpcdata.MsgType != RESPONSE {
 					this.rpcMsgHandle.DeliverToMsgQueue(rpcRequest)
 				} else {
 					this.rpcMsgHandle.DoMsgFromGoRoutine(rpcRequest)

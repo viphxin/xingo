@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"github.com/viphxin/xingo/logger"
 )
+
+var cfgpath string
 
 type ClusterServerConf struct {
 	Name     string
@@ -13,6 +16,8 @@ type ClusterServerConf struct {
 	Http     []interface{} //[port, staticfile_path]
 	Https    []interface{} //[port, certFile, keyFile, staticfile_path]
 	NetPort  int
+	DebugPort int //telnet port
+	WriteList []string //telnet ip list
 	Remotes  []string
 	Module   string
 	Log      string
@@ -34,7 +39,7 @@ func NewClusterConf(path string) (*ClusterConf, error) {
 	if err != nil {
 		panic(err)
 	}
-
+	cfgpath = path
 	return cconf, nil
 }
 
@@ -64,4 +69,16 @@ func (this *ClusterConf) GetChildsByName(name string) []string {
 		}
 	}
 	return names
+}
+
+func (this *ClusterConf)Reload(){
+	//集群服务器配置信息
+	data, err := ioutil.ReadFile(cfgpath)
+	if err != nil {
+		logger.Error(err)
+	}
+	err = json.Unmarshal(data, this)
+	if err != nil {
+		logger.Error(err)
+	}
 }

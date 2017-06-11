@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+const (
+	XINGO_CONN_PROPERTY_CTIME = "xingo_ctime"
+	XINGO_CONN_PROPERTY_NAME = "xingo_tcpserver_name"
+)
+
 type Connection struct {
 	Conn         *net.TCPConn
 	isClosed     bool
@@ -35,13 +40,21 @@ func NewConnection(conn *net.TCPConn, sessionId uint32, protoc iface.IServerProt
 		ExtSendChan:  make(chan bool, 1),
 	}
 	//set  connection time
-	fconn.SetProperty("xingo_ctime", time.Since(time.Now()))
+	fconn.SetProperty(XINGO_CONN_PROPERTY_CTIME, time.Since(time.Now()))
 	return fconn
 }
 
 func (this *Connection) Start() {
 	//add to connectionmsg
-	utils.GlobalObject.TcpServer.GetConnectionMgr().Add(this)
+	serverName, err := this.GetProperty(XINGO_CONN_PROPERTY_NAME)
+	if err != nil{
+		logger.Error("not find server name in GlobalObject.")
+		return
+	}else{
+		serverNameStr := serverName.(string)
+		utils.GlobalObject.TcpServers[serverNameStr].GetConnectionMgr().Add(this)
+	}
+
 	this.Protoc.OnConnectionMade(this)
 	this.StartWriteThread()
 	this.Protoc.StartReadThread(this)
@@ -52,12 +65,22 @@ func (this *Connection) Stop() {
 	this.sendtagGuard.Lock()
 	defer this.sendtagGuard.Unlock()
 
+	if this.isClosed{
+		return
+	}
 	this.ExtSendChan <- true
 	this.isClosed = true
 	//掉线回调放到go内防止，掉线回调处理出线死锁
 	go this.Protoc.OnConnectionLost(this)
 	//remove to connectionmsg
-	utils.GlobalObject.TcpServer.GetConnectionMgr().Remove(this)
+	serverName, err := this.GetProperty(XINGO_CONN_PROPERTY_NAME)
+	if err != nil{
+		logger.Error("not find server name in GlobalObject.")
+		return
+	}else{
+		serverNameStr := serverName.(string)
+		utils.GlobalObject.TcpServers[serverNameStr].GetConnectionMgr().Remove(this)
+	}
 	close(this.ExtSendChan)
 	close(this.SendBuffChan)
 }
@@ -143,8 +166,8 @@ func (this *Connection) RemoteAddr() net.Addr {
 
 func (this *Connection) LostConnection() {
 	(*this.Conn).Close()
-	this.isClosed = true
-	logger.Info("LostConnection==============!!!!!!!!!!!!!!!!!!!!!!!!!")
+	logger.Info("LostConnection session: ", this.SessionId)
+	this.Stop()
 }
 
 func (this *Connection) StartWriteThread() {

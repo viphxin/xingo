@@ -49,7 +49,7 @@ const (
 	OFF
 )
 
-const (
+var (
 	debug_str         = "debug"
 	info_str          = "info"
 	warn_str          = "\033[036;1mwarn\033[036;0m"
@@ -62,6 +62,14 @@ const (
 	ROLLINGDAILY
 	ROLLINGFILE
 )
+
+func init(){
+	if runtime.GOOS == "windows"{
+		warn_str          = "warn"
+		error_str         = "error"
+		fatal_str         = "fatal"
+	}
+}
 
 type _FILE struct {
 	dir      string

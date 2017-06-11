@@ -14,6 +14,7 @@ type Master struct {
 	OnlineNodes map[string]bool
 	Cconf       *cluster.ClusterConf
 	Childs      *cluster.ChildMgr
+	TelnetServer   iface.Iserver
 	sync.RWMutex
 }
 
@@ -39,6 +40,17 @@ func NewMaster(path string) *Master {
 		utils.GlobalObject.LogName = cconf.Master.Log
 		utils.ReSettingLog()
 	}
+
+	//telnet debug tool
+	if GlobalMaster.Cconf.Master.DebugPort > 0{
+		if GlobalMaster.Cconf.Master.Host != ""{
+			GlobalMaster.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", GlobalMaster.Cconf.Master.Host,
+				GlobalMaster.Cconf.Master.DebugPort, 100, cluster.NewTelnetProtocol(GlobalMaster.Cconf.Master.WriteList))
+		}else{
+			GlobalMaster.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", "127.0.0.1", GlobalMaster.Cconf.Master.DebugPort, 100, cluster.NewTelnetProtocol(GlobalMaster.Cconf.Master.WriteList))
+		}
+		logger.Info(fmt.Sprintf("telnet tool start: %s:%d.", GlobalMaster.Cconf.Master.Host, GlobalMaster.Cconf.Master.DebugPort))
+	}
 	return GlobalMaster
 }
 
@@ -56,6 +68,9 @@ func DoConnectionLost(fconn iface.Iconnection) {
 
 func (this *Master) StartMaster() {
 	s := fserver.NewServer()
+	if GlobalMaster.TelnetServer != nil{
+		this.TelnetServer.Start()
+	}
 	s.Serve()
 }
 

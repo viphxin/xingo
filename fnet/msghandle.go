@@ -85,24 +85,48 @@ func (this *MsgHandle)HandleError(err interface{}){
 }
 
 func (this *MsgHandle) StartWorkerLoop(poolSize int) {
-	for i := 0; i < poolSize; i += 1 {
-		c := make(chan *PkgAll, utils.GlobalObject.MaxWorkerLen)
-		this.TaskQueue[i] = c
-		go func(index int, taskQueue chan *PkgAll) {
-			logger.Info(fmt.Sprintf("init thread pool %d.", index))
-			for {
-				data := <-taskQueue
-				//can goroutine?
-				if f, ok := this.Apis[data.Pdata.MsgId]; ok {
-					//存在
-					st := time.Now()
-					//f.Call([]reflect.Value{reflect.ValueOf(data)})
-					utils.XingoTry(f, []reflect.Value{reflect.ValueOf(data)}, this.HandleError)
-					logger.Debug(fmt.Sprintf("Api_%d cost total time: %f ms", data.Pdata.MsgId, time.Now().Sub(st).Seconds()*1000))
-				} else {
-					logger.Error(fmt.Sprintf("not found api:  %d", data.Pdata.MsgId))
+	if utils.GlobalObject.IsThreadSafeMode(){
+		//线程安全模式所有的逻辑都在一个goroutine处理, 这样可以实现无锁化服务
+		this.TaskQueue[0] = make(chan *PkgAll, utils.GlobalObject.MaxWorkerLen)
+		go func(){
+			logger.Info("init thread mode workpool.")
+			for{
+				select {
+				case data := <- this.TaskQueue[0]:
+					if f, ok := this.Apis[data.Pdata.MsgId]; ok {
+						//存在
+						st := time.Now()
+						//f.Call([]reflect.Value{reflect.ValueOf(data)})
+						utils.XingoTry(f, []reflect.Value{reflect.ValueOf(data)}, this.HandleError)
+						logger.Debug(fmt.Sprintf("Api_%d cost total time: %f ms", data.Pdata.MsgId, time.Now().Sub(st).Seconds()*1000))
+					} else {
+						logger.Error(fmt.Sprintf("not found api:  %d", data.Pdata.MsgId))
+					}
+				case delaytask := <- utils.GlobalObject.GetSafeTimer().GetTriggerChannel():
+					delaytask.Call()
 				}
 			}
-		}(i, c)
+		}()
+	}else{
+		for i := 0; i < poolSize; i += 1 {
+			c := make(chan *PkgAll, utils.GlobalObject.MaxWorkerLen)
+			this.TaskQueue[i] = c
+			go func(index int, taskQueue chan *PkgAll) {
+				logger.Info(fmt.Sprintf("init thread pool %d.", index))
+				for {
+					data := <-taskQueue
+					//can goroutine?
+					if f, ok := this.Apis[data.Pdata.MsgId]; ok {
+						//存在
+						st := time.Now()
+						//f.Call([]reflect.Value{reflect.ValueOf(data)})
+						utils.XingoTry(f, []reflect.Value{reflect.ValueOf(data)}, this.HandleError)
+						logger.Debug(fmt.Sprintf("Api_%d cost total time: %f ms", data.Pdata.MsgId, time.Now().Sub(st).Seconds()*1000))
+					} else {
+						logger.Error(fmt.Sprintf("not found api:  %d", data.Pdata.MsgId))
+					}
+				}
+			}(i, c)
+		}
 	}
 }
