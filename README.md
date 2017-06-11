@@ -1,19 +1,19 @@
 # xingo_cluster
 
 xingo golang游戏开发交流群：535378240<br>
-文档地址: http://www.w3cschool.cn/xingo/
+文档地址: http://www.runingman.net/
 ```text
-    xingo_cluster是免费、开源、可定制、可扩展、节点支持“热更新”的高性能分布式游戏服务器开发框架，采用golang语言开发，天
-生携带高并发场景的处理基因，继承了golang语言本身的各种优点，开发简单易上手并且功能强大。它主要实现了高性能的异步网络库
-xingo，分布式节点间的高性能rpc通信，日志管理等，可以节省大量游戏开发时间，让游戏开发人员可以将主要精力放到游戏玩法和游戏逻
-辑上。真正实现了修改配置文件就可以搭建自定义的分布式游戏服务器架构。
+    xingo是免费、开源、可定制、可扩展、节点支持“热更新”的高性能分布式服务器开发框架，采用golang语言开发，天生携带高并发场景的处理基因，继承了golang语言本身的各种优点，开发简单易上手并且功能强大。它主要实现了高性能的异步网络库，分布式节点间的高性能rpc通信，日志管理, 数据库支持（暂时只支持mongodb），goroutine安全的定时器，telnet在线服务器调试工具等，可用的开发场景包括但不局限于IM即时通讯服务器，游戏服务器（已有多款公司级别的项目选择了xingo）等可以节省大量游戏开发时间，让游戏开发人员可以将主要精力放到游戏玩法和游戏逻辑上。真正实现了修改配置文件就可以搭建自定义的分布式服务器架构。
 
-优势特点：
-1) 开发效率高
-2) 支持自定义的分布式架构，方便横向扩展节点，理论上只要有足够的物理机器，没有承载上限
-3) 支持自定义通信协议
-4) 分布式节点自动发现
-5) worker pool工作线程池
+    优势特点：
+    1) 开发效率高
+    2) 支持自定义的分布式架构，方便横向扩展节点，理论上只要有足够的物理机器，没有承载上限
+    3) 支持自定义通信协议
+    4) 分布式节点自动发现，自动重连
+    5) worker pool工作线程池
+    6) telnet在线服务调试工具（使用方便扩展简单）
+    7) 内置mongodb数据库支持
+    8）goroutine安全的定时器实现
 ```
 示例配置:<br>
 ```json
@@ -36,7 +36,7 @@ xingo，分布式节点间的高性能rpc通信，日志管理等，可以节省
     }
 }
 ```
-架构图：
+示例架构图：
 ![alt text](https://git.oschina.net/viphxin/xingo_cluster/raw/master/conf/xingo_cluster_架构.png)
 
 
@@ -66,8 +66,8 @@ Data  []byte 数据<br>
   FrequencyControl: 100/s,//  100/h(每小时一百个包), 100/m(每分钟一百个包), 100/s(每秒一百个包)<br>
   OnConnectioned: func(fconn iface.Iconnection) {},//链接建立事件回调<br>
   OnClosed:       func(fconn iface.Iconnection) {},//链接断开事件回调<br>
-  OnServerStop:   func(), //服务器停服回调
-  Protoc:         iface.IServerProtocol//socket数据pack和unpack的实现，可以通过设置该值重载服务器协议
+  OnServerStop:   func(), //服务器停服回调<br>
+  Protoc:         iface.IServerProtocol//socket数据pack和unpack的实现，可以通过设置该值重载服务器协议<br>
   
   如何使用？<br>
   只需要一步，添加消息路由：<br>
