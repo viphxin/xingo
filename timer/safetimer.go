@@ -4,6 +4,7 @@ import (
 	"github.com/viphxin/xingo/logger"
 	"sync"
 	"time"
+	"math"
 )
 
 /*
@@ -16,6 +17,8 @@ const (
 	ERRORMAX = 10
 	//默认最大触发队列缓冲大小
 	TRIGGERMAX = 1024
+	//默认hashwheel分级
+	LEVEL     =  12
 )
 
 func UnixTS() int64 {
@@ -43,9 +46,7 @@ func NewSafeTimer(delay int64, delayCall *DelayCall) *SafeTimer {
 }
 
 type SafeTimerScheduel struct {
-	//最早需要触发的timer
-	min         int64
-	tasks       map[uint32]*SafeTimer
+	hashwheel   *HashWheel
 	idGen       uint32
 	triggerChan chan *DelayCall
 	sync.RWMutex
@@ -53,10 +54,18 @@ type SafeTimerScheduel struct {
 
 func NewSafeTimerScheduel() *SafeTimerScheduel {
 	scheduel := &SafeTimerScheduel{
-		tasks:       make(map[uint32]*SafeTimer, TIMERLEN),
+		hashwheel:       NewHashWheel("wheel_hours", LEVEL, 3600*1e3, TIMERLEN),
 		idGen:       0,
 		triggerChan: make(chan *DelayCall, TRIGGERMAX),
 	}
+
+	//minute wheel
+	minuteWheel := NewHashWheel("wheel_minutes", LEVEL, 60*1e3, TIMERLEN)
+	//second wheel
+	secondWheel := NewHashWheel("wheel_seconds", LEVEL, 1*1e3, TIMERLEN)
+	minuteWheel.AddNext(secondWheel)
+	scheduel.hashwheel.AddNext(minuteWheel)
+
 	go scheduel.StartScheduelLoop()
 	return scheduel
 }
@@ -65,83 +74,38 @@ func (this *SafeTimerScheduel) GetTriggerChannel() chan *DelayCall {
 	return this.triggerChan
 }
 
-func (this *SafeTimerScheduel) add(delayCall *SafeTimer) uint32 {
-	this.idGen += 1
-	this.tasks[this.idGen] = delayCall
-	if this.min > delayCall.unixts {
-		this.min = delayCall.unixts
-	}
-	return this.idGen
-}
-
-func (this *SafeTimerScheduel) remove(timerId uint32) {
-	if _, ok := this.tasks[timerId]; ok {
-		delete(this.tasks, timerId)
-	}
-}
-
-func (this *SafeTimerScheduel) CreateTimer(delay int64, f func(v ...interface{}), args []interface{}) uint32 {
+func (this *SafeTimerScheduel) CreateTimer(delay int64, f func(v ...interface{}), args []interface{}) (uint32, error) {
 	this.Lock()
 	defer this.Unlock()
 
-	return this.add(
+	this.idGen += 1
+	err := this.hashwheel.Add2WheelChain(this.idGen,
 		NewSafeTimer(delay, &DelayCall{
 			f:    f,
 			args: args,
 		}))
+	if err != nil{
+		return 0, err
+	}else{
+		return this.idGen, nil
+	}
 }
 
 func (this *SafeTimerScheduel) CancelTimer(timerId uint32) {
-	this.Lock()
-	defer this.Unlock()
-
-	this.remove(timerId)
+	this.hashwheel.RemoveFromWheelChain(timerId)
 }
 
 func (this *SafeTimerScheduel) StartScheduelLoop() {
 	logger.Info("xingo safe timer scheduelloop runing.")
 	for {
-		unixts := UnixTS()
-		if this.min-unixts > ERRORMAX {
-			//如果最早需要触发的定时器大于ERRORMAX ms
-			time.Sleep(ERRORMAX * time.Millisecond)
-		}
-		triggerList := make(map[int8][]*SafeTimer, ERRORMAX)
-		timerIdMap := make([]uint32, 0)
-		this.Lock()
-		for k, v := range this.tasks {
-			if v.unixts-unixts > 10 {
-				continue
-			} else {
-				x := v.unixts - unixts
-				if x <= 0 {
-					x = 1
-				}
-				x -= 1
-
-				if xList, ok := triggerList[int8(x)]; ok {
-					xList = append(xList, v)
-				} else {
-					xList = []*SafeTimer{v}
-					triggerList[int8(x)] = xList
-				}
-				timerIdMap = append(timerIdMap, k)
-			}
-		}
-		//delete
-		for _, timerId := range timerIdMap {
-			this.remove(timerId)
-		}
-		this.Unlock()
+		triggerList := this.hashwheel.GetTriggerWithIn(ERRORMAX)
 		//trigger
-		if len(triggerList) > 0 {
-			logger.Debug(triggerList)
-		}
 		for _, v := range triggerList {
-			for _, t := range v {
-				logger.Debug("want call: ", t.unixts, ".real call: ", UnixTS(), ".ErrorMS: ", UnixTS()-t.unixts)
-				this.triggerChan <- t.delayCall
+			//logger.Debug("want call: ", v.unixts, ".real call: ", UnixTS(), ".ErrorMS: ", UnixTS()-v.unixts)
+			if math.Abs(float64(UnixTS()-v.unixts)) > float64(10){
+				logger.Error("want call: ", v.unixts, ".real call: ", UnixTS(), ".ErrorMS: ", UnixTS()-v.unixts)
 			}
+			this.triggerChan <- v.delayCall
 		}
 
 		//wait for next loop
