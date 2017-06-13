@@ -35,8 +35,10 @@ func Test(t *testing.T) {
 		}
 	}()
 	go func(){
-		time.Sleep(60*time.Second)
-		logger.Info("last timer: ", atomic.LoadInt64(&tt))
+		for{
+			time.Sleep(60*time.Second)
+			logger.Info("last timer: ", atomic.LoadInt64(&tt))
+		}
 	}()
 	for {
 		s.CreateTimer(int64(rand.Int31n(25*3600*1e3)), test, []interface{}{22, 33})
