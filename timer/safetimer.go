@@ -4,6 +4,7 @@ import (
 	"github.com/viphxin/xingo/logger"
 	"sync"
 	"time"
+	"math"
 )
 
 /*
@@ -100,7 +101,10 @@ func (this *SafeTimerScheduel) StartScheduelLoop() {
 		triggerList := this.hashwheel.GetTriggerWithIn(ERRORMAX)
 		//trigger
 		for _, v := range triggerList {
-			logger.Debug("want call: ", v.unixts, ".real call: ", UnixTS(), ".ErrorMS: ", UnixTS()-v.unixts)
+			//logger.Debug("want call: ", v.unixts, ".real call: ", UnixTS(), ".ErrorMS: ", UnixTS()-v.unixts)
+			if math.Abs(float64(UnixTS()-v.unixts)) > float64(10){
+				logger.Error("want call: ", v.unixts, ".real call: ", UnixTS(), ".ErrorMS: ", UnixTS()-v.unixts)
+			}
 			this.triggerChan <- v.delayCall
 		}
 
