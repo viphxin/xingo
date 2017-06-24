@@ -74,9 +74,9 @@ func (this *Master) StartMaster() {
 	s.Serve()
 }
 
-func (this *Master) AddRpcRouter(router interface{}) {
+func (this *Master) AddRpcRouter(name string, router iface.IRpcRouter) {
 	//add rpc ---------------start
-	utils.GlobalObject.Protoc.AddRpcRouter(router)
+	utils.GlobalObject.Protoc.GetMsgHandle().AddRpcRouter(name, router)
 	//add rpc ---------------end
 }
 

@@ -41,7 +41,7 @@ func NewXingoTcpServer() iface.Iserver{
 func NewXingoMater(cfg string) *clusterserver.Master{
 	s := clusterserver.NewMaster(cfg)
 	//add rpc
-	s.AddRpcRouter(&sys_rpc.MasterRpc{})
+	s.AddRpcRouter("MasterTakeProxy", &sys_rpc.MasterTakeProxyRouter{})
 	//add command
 	if utils.GlobalObject.CmdInterpreter != nil{
 		utils.GlobalObject.CmdInterpreter.AddCommand(telnetcmd.NewPprofCpuCommand())
@@ -54,8 +54,10 @@ func NewXingoMater(cfg string) *clusterserver.Master{
 func NewXingoCluterServer(nodename, cfg string) *clusterserver.ClusterServer{
 	s := clusterserver.NewClusterServer(nodename,cfg)
 	//add rpc
-	s.AddRpcRouter(&sys_rpc.ChildRpc{})
-	s.AddRpcRouter(&sys_rpc.RootRpc{})
+	s.AddRpcRouter("NtfTakeProxy", &sys_rpc.NtfTakeProxyRouter{})
+	s.AddRpcRouter("CloseServer", &sys_rpc.CloseServerRouter{})
+	s.AddRpcRouter("ReloadConfig", &sys_rpc.ReloadConfigRouter{})
+	s.AddRpcRouter("RootTakeProxy", &sys_rpc.RootTakeProxyRouter{})
 	//add cmd
 	if utils.GlobalObject.CmdInterpreter != nil{
 		utils.GlobalObject.CmdInterpreter.AddCommand(telnetcmd.NewPprofCpuCommand())

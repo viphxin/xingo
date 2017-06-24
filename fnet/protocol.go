@@ -18,9 +18,21 @@ var (
 	packageTooBig = errors.New("Too many data to received!!")
 )
 
-type PkgAll struct {
+type Request struct {
 	Pdata *PkgData
 	Fconn iface.Iconnection
+}
+
+func (this *Request)GetConnection() iface.Iconnection{
+	return this.Fconn
+}
+
+func (this *Request)GetData() []byte{
+	return this.Pdata.Data
+}
+
+func (this *Request)GetMsgId() uint32{
+	return this.Pdata.MsgId
 }
 
 type Protocol struct {
@@ -40,10 +52,6 @@ func (this *Protocol) GetMsgHandle() iface.Imsghandle {
 }
 func (this *Protocol) GetDataPack() iface.Idatapack {
 	return this.pbdatapack
-}
-
-func (this *Protocol) AddRpcRouter(router interface{}) {
-	this.msghandle.AddRouter(router)
 }
 
 func (this *Protocol) InitWorker(poolsize int32) {
@@ -141,12 +149,12 @@ func (this *Protocol) StartReadThread(fconn iface.Iconnection) {
 
 		logger.Debug(fmt.Sprintf("msg id :%d, data len: %d", pkg.MsgId, pkg.Len))
 		if utils.GlobalObject.PoolSize > 0 {
-			this.msghandle.DeliverToMsgQueue(&PkgAll{
+			this.msghandle.DeliverToMsgQueue(&Request{
 				Pdata: pkg,
 				Fconn: fconn,
 			})
 		} else {
-			this.msghandle.DoMsgFromGoRoutine(&PkgAll{
+			this.msghandle.DoMsgFromGoRoutine(&Request{
 				Pdata: pkg,
 				Fconn: fconn,
 			})

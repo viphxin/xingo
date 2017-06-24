@@ -3,6 +3,7 @@ package iface
 type Imsghandle interface {
 	DeliverToMsgQueue(interface{})
 	DoMsgFromGoRoutine(interface{})
-	AddRouter(interface{})
+	AddRouter(string, IRouter)
+	AddRpcRouter(string, IRpcRouter)
 	StartWorkerLoop(int)
 }

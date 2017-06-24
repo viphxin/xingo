@@ -5,7 +5,6 @@ type IClientProtocol interface {
 	OnConnectionLost(fconn Iclient)
 	StartReadThread(fconn Iclient)
 	InitWorker(int32)
-	AddRpcRouter(interface{})
 	GetMsgHandle() Imsghandle
 	GetDataPack() Idatapack
 }
@@ -15,7 +14,6 @@ type IServerProtocol interface {
 	OnConnectionLost(fconn Iconnection)
 	StartReadThread(fconn Iconnection)
 	InitWorker(int32)
-	AddRpcRouter(interface{})
 	GetMsgHandle() Imsghandle
 	GetDataPack() Idatapack
 }

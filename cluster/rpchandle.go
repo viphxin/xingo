@@ -8,21 +8,22 @@ import (
 	"github.com/viphxin/xingo/logger"
 	"github.com/viphxin/xingo/utils"
 	"math/rand"
-	"reflect"
 	"time"
+	"github.com/viphxin/xingo/iface"
+	"runtime/debug"
 )
 
 type RpcMsgHandle struct {
 	PoolSize  int32
 	TaskQueue []chan *RpcRequest
-	Apis      map[string]reflect.Value
+	Apis      map[string]iface.IRpcRouter
 }
 
 func NewRpcMsgHandle() *RpcMsgHandle {
 	return &RpcMsgHandle{
 		PoolSize:  utils.GlobalObject.PoolSize,
 		TaskQueue: make([]chan *RpcRequest, utils.GlobalObject.PoolSize),
-		Apis:      make(map[string]reflect.Value),
+		Apis:      make(map[string]iface.IRpcRouter),
 	}
 }
 
@@ -30,6 +31,13 @@ func NewRpcMsgHandle() *RpcMsgHandle {
 处理rpc消息
 */
 func (this *RpcMsgHandle) DoMsg(request *RpcRequest) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Info("-------------DoRpcMsg panic recover---------------")
+			//this.HandleError(err)
+			debug.PrintStack()
+		}
+	}()
 	if request.Rpcdata.MsgType == RESPONSE && request.Rpcdata.Key != "" {
 		//放回异步结果
 		AResultGlobalObj.FillAsyncResult(request.Rpcdata.Key, request.Rpcdata)
@@ -39,11 +47,12 @@ func (this *RpcMsgHandle) DoMsg(request *RpcRequest) {
 		if f, ok := this.Apis[request.Rpcdata.Target]; ok {
 			//存在
 			st := time.Now()
+			f.PreHandle(request)
 			if request.Rpcdata.MsgType == REQUEST_FORRESULT {
-				ret := f.Call([]reflect.Value{reflect.ValueOf(request)})
+				f.Handle(request)
 				packdata, err := utils.GlobalObject.RpcCProtoc.GetDataPack().Pack(0, &RpcData{
 					MsgType: RESPONSE,
-					Result:  ret[0].Interface().(map[string]interface{}),
+					Result:  request.GetResult(),
 					Key:     request.Rpcdata.Key,
 				})
 				if err == nil {
@@ -52,10 +61,10 @@ func (this *RpcMsgHandle) DoMsg(request *RpcRequest) {
 					logger.Error(err)
 				}
 			} else if request.Rpcdata.MsgType == REQUEST_NORESULT {
-				f.Call([]reflect.Value{reflect.ValueOf(request)})
+				f.Handle(request)
 			}
-
-			logger.Debug(fmt.Sprintf("rpc %s cost total time: %f ms", request.Rpcdata.Target, time.Now().Sub(st).Seconds()*1000))
+			f.AfterHandle(request)
+			logger.Debug(fmt.Sprintf("rpc %s cost total time: %f ms", request.Rpcdata.Target, float64(time.Now().Sub(st).Nanoseconds())/1e6))
 		} else {
 			logger.Error(fmt.Sprintf("not found rpc:  %s", request.Rpcdata.Target))
 		}
@@ -76,19 +85,16 @@ func (this *RpcMsgHandle) DoMsgFromGoRoutine(pkg interface{}) {
 	go this.DoMsg(request)
 }
 
-func (this *RpcMsgHandle) AddRouter(router interface{}) {
-	value := reflect.ValueOf(router)
-	tp := value.Type()
-	for i := 0; i < value.NumMethod(); i += 1 {
-		name := tp.Method(i).Name
-
-		if _, ok := this.Apis[name]; ok {
-			//存在
-			panic("repeated rpc " + name)
-		}
-		this.Apis[name] = value.Method(i)
-		logger.Info("add rpc " + name)
+func (this *RpcMsgHandle) AddRpcRouter(name string, router iface.IRpcRouter) {
+	if _, ok := this.Apis[name]; ok {
+		//存在
+		panic("repeated rpc " + name)
 	}
+	this.Apis[name] = router
+	logger.Info("add rpc " + name)
+}
+func (this *RpcMsgHandle) AddRouter(name string, router iface.IRouter) {
+	//don`t need implement
 }
 
 func (this *RpcMsgHandle) StartWorkerLoop(poolSize int) {

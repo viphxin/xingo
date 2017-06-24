@@ -10,7 +10,7 @@ type Iserver interface {
 	Serve()
 	GetConnectionMgr() Iconnectionmgr
 	GetConnectionQueue() chan interface{}
-	AddRouter(router interface{})
+	AddRouter(name string, router IRouter)
 	CallLater(durations time.Duration, f func(v ...interface{}), args ...interface{})
 	CallWhen(ts string, f func(v ...interface{}), args ...interface{})
 	CallLoop(durations time.Duration, f func(v ...interface{}), args ...interface{})

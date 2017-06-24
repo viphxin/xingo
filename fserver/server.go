@@ -121,9 +121,9 @@ func (this *Server) Stop() {
 	}
 }
 
-func (this *Server) AddRouter(router interface{}) {
+func (this *Server) AddRouter(name string, router iface.IRouter) {
 	logger.Info("AddRouter")
-	utils.GlobalObject.Protoc.GetMsgHandle().AddRouter(router)
+	utils.GlobalObject.Protoc.GetMsgHandle().AddRouter(name, router)
 }
 
 func (this *Server) CallLater(durations time.Duration, f func(v ...interface{}), args ...interface{}) {

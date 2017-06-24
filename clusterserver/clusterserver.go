@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -27,7 +26,6 @@ type ClusterServer struct {
 	RootServer     iface.Iserver
 	TelnetServer   iface.Iserver
 	Cconf          *cluster.ClusterConf
-	modules        map[string][]interface{} //所有模块统一管理
 	sync.RWMutex
 }
 
@@ -77,7 +75,6 @@ func NewClusterServer(name, path string) *ClusterServer {
 		Cconf:          cconf,
 		RemoteNodesMgr: cluster.NewChildMgr(),
 		ChildsMgr:      cluster.NewChildMgr(),
-		modules:        make(map[string][]interface{}, 0),
 		httpServerMux:  http.NewServeMux(),
 	}
 
@@ -123,32 +120,6 @@ func (this *ClusterServer) StartClusterServer() {
 	serverconf, ok := this.Cconf.Servers[utils.GlobalObject.Name]
 	if !ok {
 		panic("no server in clusterconf!!!")
-	}
-	//自动发现注册modules api
-	modules, ok := this.modules[serverconf.Module]
-	if ok {
-		//api
-		if serverconf.NetPort > 0 {
-			for _, m := range modules[0].([]interface{}){
-				if m != nil{
-					this.AddRouter(m)
-				}
-			}
-		}
-		//http
-		if len(serverconf.Http) > 0 || len(serverconf.Https) > 0{
-			for _, m := range modules[1].([]interface{}){
-				if m != nil{
-					this.AddHttpRouter(m)
-				}
-			}
-		}
-		//rpc
-		for _, m := range modules[2].([]interface{}){
-			if m != nil{
-				this.AddRpcRouter(m)
-			}
-		}
 	}
 
 	//http server
@@ -244,12 +215,12 @@ func (this *ClusterServer) ConnectToMaster() {
 	master.Start()
 	//注册到master
 	rpc := cluster.NewChild(utils.GlobalObject.Name, this.MasterObj)
-	response, err := rpc.CallChildForResult("TakeProxy", utils.GlobalObject.Name)
+	response, err := rpc.CallChildForResult("MasterTakeProxy", utils.GlobalObject.Name)
 	if err == nil {
 		roots, ok := response.Result["roots"]
 		if ok {
-			for _, root := range roots.([]interface{}) {
-				this.ConnectToRemote(root.(string))
+			for _, root := range roots.([]string) {
+				this.ConnectToRemote(root)
 			}
 		}
 	} else {
@@ -269,7 +240,7 @@ func (this *ClusterServer) ConnectToRemote(rname string) {
 			//takeproxy
 			child, err := this.RemoteNodesMgr.GetChild(rname)
 			if err == nil {
-				child.CallChildNotForResult("TakeProxy", utils.GlobalObject.Name)
+				child.CallChildNotForResult("RootTakeProxy", utils.GlobalObject.Name)
 			}
 		} else {
 			logger.Info("Remote connection already exist!")
@@ -280,19 +251,19 @@ func (this *ClusterServer) ConnectToRemote(rname string) {
 	}
 }
 
-func (this *ClusterServer) AddRouter(router interface{}) {
+func (this *ClusterServer) AddRouter(name string, router iface.IRouter) {
 	if utils.GlobalObject.Protoc != nil{
 		//add api ---------------start
-		utils.GlobalObject.Protoc.AddRpcRouter(router)
+		utils.GlobalObject.Protoc.GetMsgHandle().AddRouter(name, router)
 		//add api ---------------end
 	}
 }
 
-func (this *ClusterServer) AddRpcRouter(router interface{}) {
+func (this *ClusterServer) AddRpcRouter(name string, router iface.IRpcRouter) {
 	//add api ---------------start
-	utils.GlobalObject.RpcCProtoc.AddRpcRouter(router)
+	utils.GlobalObject.RpcCProtoc.GetMsgHandle().AddRpcRouter(name, router)
 	if utils.GlobalObject.RpcSProtoc != nil {
-		utils.GlobalObject.RpcSProtoc.AddRpcRouter(router)
+		utils.GlobalObject.RpcSProtoc.GetMsgHandle().AddRpcRouter(name, router)
 	}
 	//add api ---------------end
 }
@@ -333,30 +304,9 @@ func (this *ClusterServer) GetRemote(name string) (*cluster.Child, error) {
 }
 
 /*
-注册模块到分布式服务器
-*/
-func (this *ClusterServer) AddModule(mname string, apimodule interface{},httpmodule interface{}, rpcmodule interface{}) {
-	//this.modules[mname] = []interface{}{module, rpcmodule}
-	if _,ok := this.modules[mname]; ok{
-		this.modules[mname][0] = append(this.modules[mname][0].([]interface{}), apimodule)
-		this.modules[mname][1] = append(this.modules[mname][1].([]interface{}), httpmodule)
-		this.modules[mname][2] = append(this.modules[mname][2].([]interface{}), rpcmodule)
-	}else{
-		this.modules[mname] = []interface{}{[]interface{}{apimodule}, []interface{}{httpmodule}, []interface{}{rpcmodule}}
-	}
-}
-
-/*
 注册http的api到分布式服务器
 */
-func (this *ClusterServer) AddHttpRouter(router interface{}) {
-	value := reflect.ValueOf(router)
-	tp := value.Type()
-	for i := 0; i < value.NumMethod(); i += 1 {
-		name := tp.Method(i).Name
-		uri := fmt.Sprintf("/%s", strings.ToLower(strings.Replace(name, "Handle", "", 1)))
-		this.httpServerMux.HandleFunc(uri,
-			utils.HttpRequestWrap(uri, value.Method(i).Interface().(func(http.ResponseWriter, *http.Request))))
-		logger.Info("add http url: " + uri)
-	}
+func (this *ClusterServer) AddHttpRouter(uri string, router iface.IHttpRouter) {
+	this.httpServerMux.HandleFunc(uri, utils.HttpRequestWrap(uri, router))
+	logger.Info("add http url: " + uri)
 }

@@ -7,20 +7,23 @@ import (
 	"reflect"
 	"runtime/debug"
 	"time"
+	"github.com/viphxin/xingo/iface"
 )
 
-func HttpRequestWrap(uri string, targat func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+func HttpRequestWrap(uri string, router iface.IHttpRouter) func(http.ResponseWriter, *http.Request) {
 	return func(response http.ResponseWriter, request *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				debug.PrintStack()
 				logger.Info("===================http server panic recover===============")
+				debug.PrintStack()
 			}
 		}()
 		st := time.Now()
 		logger.Debug("User-Agent: ", request.Header["User-Agent"])
-		targat(response, request)
-		logger.Debug(fmt.Sprintf("%s cost total time: %f ms", uri, time.Now().Sub(st).Seconds()*1000))
+		router.PreHandle(response, request)
+		router.Handle(response, request)
+		router.AfterHandle(response, request)
+		logger.Debug(fmt.Sprintf("%s cost total time: %f ms", uri, float64(time.Now().Sub(st).Nanoseconds())/1e6))
 	}
 }
 

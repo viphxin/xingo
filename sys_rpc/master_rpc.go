@@ -4,17 +4,18 @@ import (
 	"github.com/viphxin/xingo/cluster"
 	"github.com/viphxin/xingo/clusterserver"
 	"github.com/viphxin/xingo/logger"
+	"github.com/viphxin/xingo/iface"
 )
 
-type MasterRpc struct {
+type MasterTakeProxyRouter struct {
+	cluster.BaseRpcRouter
 }
 
-func (this *MasterRpc) TakeProxy(request *cluster.RpcRequest) (response map[string]interface{}) {
-	response = make(map[string]interface{}, 0)
-	name := request.Rpcdata.Args[0].(string)
+func (this *MasterTakeProxyRouter) Handle(request iface.IRpcRequest) {
+	name := request.GetArgs()[0].(string)
 	logger.Info("node " + name + " connected to master.")
 	//加到childs并且绑定链接connetion对象
-	clusterserver.GlobalMaster.AddNode(name, request.Fconn)
+	clusterserver.GlobalMaster.AddNode(name, request.GetWriter())
 
 	//返回需要链接的父节点
 	remotes, err := clusterserver.GlobalMaster.Cconf.GetRemotesByName(name)
@@ -26,7 +27,7 @@ func (this *MasterRpc) TakeProxy(request *cluster.RpcRequest) (response map[stri
 				roots = append(roots, r)
 			}
 		}
-		response["roots"] = roots
+		request.PushReturn("roots", roots)
 	}
 	//通知当前节点的子节点链接当前节点
 	for _, child := range clusterserver.GlobalMaster.Childs.GetChilds() {
@@ -37,7 +38,7 @@ func (this *MasterRpc) TakeProxy(request *cluster.RpcRequest) (response map[stri
 				if rname == name {
 					//包含，需要通知child节点连接当前节点
 					//rpc notice
-					child.CallChildNotForResult("RootTakeProxy", name)
+					child.CallChildNotForResult("NtfTakeProxy", name)
 					break
 				}
 			}
