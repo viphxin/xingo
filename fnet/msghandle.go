@@ -40,7 +40,7 @@ func (this *MsgHandle) DoApi(request *Request){
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Info("-------------DoApi panic recover---------------")
-			//this.HandleError(err)
+			this.HandleError(err)
 			debug.PrintStack()
 		}
 	}()

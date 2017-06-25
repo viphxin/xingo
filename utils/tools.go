@@ -15,6 +15,7 @@ func HttpRequestWrap(uri string, router iface.IHttpRouter) func(http.ResponseWri
 		defer func() {
 			if err := recover(); err != nil {
 				logger.Info("===================http server panic recover===============")
+				logger.Error(err)
 				debug.PrintStack()
 			}
 		}()

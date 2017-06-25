@@ -34,7 +34,7 @@ func (this *RpcMsgHandle) DoMsg(request *RpcRequest) {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Info("-------------DoRpcMsg panic recover---------------")
-			//this.HandleError(err)
+			logger.Error(err)
 			debug.PrintStack()
 		}
 	}()
