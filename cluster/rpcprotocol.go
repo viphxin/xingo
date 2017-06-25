@@ -1,12 +1,13 @@
 package cluster
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/viphxin/xingo/iface"
 	"github.com/viphxin/xingo/logger"
 	"github.com/viphxin/xingo/utils"
 	"io"
+	"encoding/gob"
+	"bytes"
 )
 
 type RpcServerProtocol struct {
@@ -76,7 +77,10 @@ func (this *RpcServerProtocol) StartReadThread(fconn iface.Iconnection) {
 					Rpcdata: &RpcData{},
 				}
 
-				err = json.Unmarshal(pkg.Data, rpcRequest.Rpcdata)
+				//err = json.Unmarshal(pkg.Data, rpcRequest.Rpcdata)
+				//replace json to gob
+				dec := gob.NewDecoder(bytes.NewReader(pkg.Data))
+				err = dec.Decode(rpcRequest.Rpcdata)
 
 				if err != nil {
 					logger.Error(err)
@@ -158,7 +162,10 @@ func (this *RpcClientProtocol) StartReadThread(fconn iface.Iclient) {
 					Fconn:   fconn,
 					Rpcdata: &RpcData{},
 				}
-				err = json.Unmarshal(pkg.Data, rpcRequest.Rpcdata)
+				//err = json.Unmarshal(pkg.Data, rpcRequest.Rpcdata)
+				//replace json to gob
+				dec := gob.NewDecoder(bytes.NewReader(pkg.Data))
+				err = dec.Decode(rpcRequest.Rpcdata)
 				if err != nil {
 					logger.Error("json.Unmarshal error!!!")
 					fconn.Stop(false)

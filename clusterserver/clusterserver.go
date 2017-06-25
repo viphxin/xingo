@@ -248,8 +248,8 @@ func (this *ClusterServer) ConnectToMaster() {
 	if err == nil {
 		roots, ok := response.Result["roots"]
 		if ok {
-			for _, root := range roots.([]interface{}) {
-				this.ConnectToRemote(root.(string))
+			for _, root := range roots.([]string) {
+				this.ConnectToRemote(root)
 			}
 		}
 	} else {

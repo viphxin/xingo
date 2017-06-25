@@ -3,11 +3,11 @@ package cluster
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/viphxin/xingo/fnet"
 	"github.com/viphxin/xingo/iface"
+	"encoding/gob"
 )
 
 type RpcData struct {
@@ -56,25 +56,53 @@ func (this *RpcDataPack) Unpack(headdata []byte) (interface{}, error) {
 	return rp, nil
 }
 
+//func (this *RpcDataPack) Pack(msgId uint32, pkg interface{}) (out []byte, err error) {
+//	outbuff := bytes.NewBuffer([]byte{})
+//	// 进行编码
+//	dataBytes := []byte{}
+//	data := pkg.(*RpcData)
+//	if data != nil {
+//		dataBytes, err = json.Marshal(data)
+//	}
+//
+//	if err != nil {
+//		fmt.Println(fmt.Sprintf("json marshaling error:  %s", err))
+//	}
+//	// 写Len
+//	if err = binary.Write(outbuff, binary.LittleEndian, uint32(len(dataBytes))); err != nil {
+//		return
+//	}
+//
+//	//all pkg data
+//	if err = binary.Write(outbuff, binary.LittleEndian, dataBytes); err != nil {
+//		return
+//	}
+//
+//	out = outbuff.Bytes()
+//	return
+//
+//}
+
 func (this *RpcDataPack) Pack(msgId uint32, pkg interface{}) (out []byte, err error) {
 	outbuff := bytes.NewBuffer([]byte{})
 	// 进行编码
-	dataBytes := []byte{}
+	databuff := bytes.NewBuffer([]byte{})
 	data := pkg.(*RpcData)
 	if data != nil {
-		dataBytes, err = json.Marshal(data)
+		enc := gob.NewEncoder(databuff)
+		err = enc.Encode(data)
 	}
 
 	if err != nil {
-		fmt.Println(fmt.Sprintf("json marshaling error:  %s", err))
+		fmt.Println(fmt.Sprintf("gob marshaling error:  %s", err))
 	}
 	// 写Len
-	if err = binary.Write(outbuff, binary.LittleEndian, uint32(len(dataBytes))); err != nil {
+	if err = binary.Write(outbuff, binary.LittleEndian, uint32(databuff.Len())); err != nil {
 		return
 	}
 
 	//all pkg data
-	if err = binary.Write(outbuff, binary.LittleEndian, dataBytes); err != nil {
+	if err = binary.Write(outbuff, binary.LittleEndian, databuff.Bytes()); err != nil {
 		return
 	}
 

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"runtime/debug"
 )
 
 type MsgHandle struct {
@@ -80,7 +81,7 @@ func (this *MsgHandle) AddRouter(router interface{}) {
 
 func (this *MsgHandle)HandleError(err interface{}){
         if err != nil{
-               logger.Error(err)
+               debug.PrintStack()
         }
 }
 
