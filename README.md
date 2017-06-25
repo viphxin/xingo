@@ -78,13 +78,12 @@ Data  []byte 数据<br>
   只需要一步，添加消息路由：<br>
   s := fserver.NewServer()<br>
     //add api ---------------start<br>
-    FightingRouterObj := &api.FightingRouter{}<br>
-    s.AddRouter(FightingRouterObj)<br>
+    s.AddRouter("1", &api.HelloRouter{})<br>
     //add api ---------------end<br>
-  xingo会自动注册FightingRouter中的方法处理对应消息<br>
-  例如：msgId =1 则会寻找FightingRouter中的Func_1的方法从进行处理<br>
+  xingo会自动注册HelloRouter到消息处理管理器<br>
+  例如：msgId =1 则会寻找HelloRouter中的Handle的方法进行处理<br>
   具体使用请参考项目：<br>
+   xingo_cluster demo: https://github.com/viphxin/xingo_cluster<br>
+   mmo demo: https://git.oschina.net/viphxin/xingo_demo<br>
   帧同步服务器: https://github.com/viphxin/fighting<br>
-  mmo demo: https://git.oschina.net/viphxin/xingo_demo<br>
-  xingo_cluster demo: https://github.com/viphxin/xingo_cluster
   
