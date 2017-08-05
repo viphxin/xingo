@@ -37,16 +37,17 @@ func Test(t *testing.T) {
 		}
 	}()
 	go func(){
-		for{
-			time.Sleep(60*time.Second)
-			logger.Info("last timer: ", atomic.LoadInt64(&tt))
+		ii := 0
+		for ii < 50000{
+			s.CreateTimer(int64(rand.Int31n(3600*1e3)), test, []interface{}{22, 33})
+			atomic.AddInt64(&tt, 1)
+			time.Sleep(1 * time.Second)
+			ii += 1
 		}
 	}()
-	ii := 0
-	for ii < 50000{
-		s.CreateTimer(int64(rand.Int31n(3600*1e3)), test, []interface{}{22, 33})
-		atomic.AddInt64(&tt, 1)
-		time.Sleep(1 * time.Second)
-		ii += 1
+
+	for{
+		time.Sleep(60*time.Second)
+		logger.Info("last timer: ", atomic.LoadInt64(&tt))
 	}
 }
