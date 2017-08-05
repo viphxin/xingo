@@ -69,7 +69,7 @@ func (this *HashWheel)_add2WheelChain(tid uint32, t *SafeTimer, forceNext bool) 
 
 	now := UnixTS()
 	if t.unixts - now >= this.levelInterval || this.nextHashWheel == nil{
-
+                saved := false
 		for i := this.level - 1; i >= 0; i-- {
 			if t.unixts - now >= int64(i)*this.levelInterval{
 				if (i + this.index)%this.level == this.index && forceNext{
@@ -77,9 +77,13 @@ func (this *HashWheel)_add2WheelChain(tid uint32, t *SafeTimer, forceNext bool) 
 				}else{
 					this.timerQueue[(i + this.index)%this.level][tid] = t
 				}
+                                saved = true
 				break
 			}
 		}
+                if !saved {
+         	     this.timerQueue[this.index][tid] = t 
+                }
 		return nil
 	}else{
 		//应该放到下级
@@ -141,9 +145,15 @@ func (this *HashWheel)RunWheel() {
 		time.Sleep(time.Duration(this.levelInterval) * time.Millisecond)
 		//loop
 		this.Lock()
-		triggerList := this.timerQueue[this.index]
+		CurtriggerList := this.timerQueue[this.index]
 		this.timerQueue[this.index] = make(map[uint32]*SafeTimer, this.maxCap)
-		for k, v := range triggerList{
+		for k, v := range CurtriggerList{
+			this._add2WheelChain(k, v, true)
+		}
+
+		NextriggerList := this.timerQueue[(this.index + 1) % this.level]
+		this.timerQueue[(this.index + 1) % this.level] = make(map[uint32]*SafeTimer, this.maxCap)
+		for k, v := range NextriggerList{
 			this._add2WheelChain(k, v, true)
 		}
 		//下一格
