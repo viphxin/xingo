@@ -8,6 +8,7 @@ import (
 	"github.com/viphxin/xingo/fnet"
 	"github.com/viphxin/xingo/iface"
 	"encoding/gob"
+	"github.com/viphxin/xingo/logger"
 )
 
 type RpcData struct {
@@ -94,7 +95,8 @@ func (this *RpcDataPack) Pack(msgId uint32, pkg interface{}) (out []byte, err er
 	}
 
 	if err != nil {
-		fmt.Println(fmt.Sprintf("gob marshaling error:  %s", err))
+		logger.Error(fmt.Sprintf("rpcpack gob marshaling error:  %s", err))
+		return
 	}
 	// 写Len
 	if err = binary.Write(outbuff, binary.LittleEndian, uint32(databuff.Len())); err != nil {

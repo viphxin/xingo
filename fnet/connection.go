@@ -68,6 +68,8 @@ func (this *Connection) Stop() {
 	if this.isClosed{
 		return
 	}
+	 
+	this.Conn.Close()
 	this.ExtSendChan <- true
 	this.isClosed = true
 	//掉线回调放到go内防止，掉线回调处理出线死锁
@@ -165,9 +167,8 @@ func (this *Connection) RemoteAddr() net.Addr {
 }
 
 func (this *Connection) LostConnection() {
-	(*this.Conn).Close()
+	this.Conn.Close()
 	logger.Info("LostConnection session: ", this.SessionId)
-	this.Stop()
 }
 
 func (this *Connection) StartWriteThread() {
