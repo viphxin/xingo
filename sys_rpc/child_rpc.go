@@ -31,7 +31,7 @@ type CloseServerRouter struct {
 关闭节点信号
 */
 func (this *CloseServerRouter) Handle(request iface.IRpcRequest){
-	delay := request.GetArgs()[0].(float64)
+	delay := request.GetArgs()[0].(int)
 	logger.Warn("server close kickdown.", delay, "second...")
 	time.Sleep(time.Duration(delay)*time.Second)
 	utils.GlobalObject.ProcessSignalChan <- os.Kill
@@ -45,7 +45,7 @@ type ReloadConfigRouter struct {
 重新加载配置文件
 */
 func (this *ReloadConfigRouter) Handle(request iface.IRpcRequest){
-	delay := request.GetArgs()[0].(float64)
+	delay := request.GetArgs()[0].(int)
 	logger.Warn("server ReloadConfig kickdown.", delay, "second...")
 	time.Sleep(time.Duration(delay)*time.Second)
 	clusterserver.GlobalClusterServer.Cconf.Reload()

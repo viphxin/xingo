@@ -31,12 +31,12 @@ func (this *CloseServerCommand)Run(args []string) string{
 			for _, child := range clusterserver.GlobalMaster.Childs.GetChilds() {
 				if len(args) > 1{
 					if v, err := strconv.ParseInt(args[1], 10, 64); err == nil{
-						child.CallChildNotForResult("CloseServer", v)
+						child.CallChildNotForResult("CloseServer", int(v))
 					}else{
-						child.CallChildNotForResult("CloseServer", 0)
+						child.CallChildNotForResult("CloseServer", int(0))
 					}
 				}else{
-					child.CallChildNotForResult("CloseServer", 0)
+					child.CallChildNotForResult("CloseServer", int(0))
 				}
 			}
 		default:
@@ -46,12 +46,12 @@ func (this *CloseServerCommand)Run(args []string) string{
 			}else{
 				if len(args) > 1{
 					if v, err := strconv.ParseInt(args[1], 10, 64); err == nil{
-						child.CallChildNotForResult("CloseServer", v)
+						child.CallChildNotForResult("CloseServer", int(v))
 					}else{
-						child.CallChildNotForResult("CloseServer", 0)
+						child.CallChildNotForResult("CloseServer", int(0))
 					}
 				}else{
-					child.CallChildNotForResult("CloseServer", 0)
+					child.CallChildNotForResult("CloseServer", int(0))
 				}
 			}
 		}
@@ -84,12 +84,12 @@ func (this *ReloadCfgCommand)Run(args []string) string{
 			for _, child := range clusterserver.GlobalMaster.Childs.GetChilds() {
 				if len(args) > 1{
 					if v, err := strconv.ParseInt(args[1], 10, 64); err == nil{
-						child.CallChildNotForResult("ReloadConfig", v)
+						child.CallChildNotForResult("ReloadConfig", int(v))
 					}else{
-						child.CallChildNotForResult("ReloadConfig", 0)
+						child.CallChildNotForResult("ReloadConfig", int(0))
 					}
 				}else{
-					child.CallChildNotForResult("ReloadConfig", 0)
+					child.CallChildNotForResult("ReloadConfig", int(0))
 				}
 			}
 		default:
@@ -99,12 +99,12 @@ func (this *ReloadCfgCommand)Run(args []string) string{
 			}else{
 				if len(args) > 1{
 					if v, err := strconv.ParseInt(args[1], 10, 64); err == nil{
-						child.CallChildNotForResult("ReloadConfig", v)
+						child.CallChildNotForResult("ReloadConfig", int(v))
 					}else{
-						child.CallChildNotForResult("ReloadConfig", 0)
+						child.CallChildNotForResult("ReloadConfig", int(0))
 					}
 				}else{
-					child.CallChildNotForResult("ReloadConfig", 0)
+					child.CallChildNotForResult("ReloadConfig", int(0))
 				}
 			}
 		}
