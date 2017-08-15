@@ -17,7 +17,6 @@ type ClusterServerConf struct {
 	Https    []interface{} //[port, certFile, keyFile, staticfile_path]
 	NetPort  int
 	DebugPort int //telnet port
-	WriteList []string //telnet ip list
 	Remotes  []string
 	Module   string
 	Log      string

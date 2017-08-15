@@ -40,5 +40,6 @@ func (this *ChildRpc) ReloadConfig(request *cluster.RpcRequest){
 	logger.Warn("server ReloadConfig kickdown.", delay, "second...")
 	time.Sleep(time.Duration(delay)*time.Second)
 	clusterserver.GlobalClusterServer.Cconf.Reload()
+	utils.GlobalObject.Reload()
 	logger.Info("reload config.")
 }

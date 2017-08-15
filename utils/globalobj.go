@@ -26,7 +26,7 @@ type GlobalObj struct {
 	RpcCProtoc             iface.IClientProtocol
 	Host                   string
 	DebugPort              int          //telnet port 用于单机模式
-	WriteList              []string     //telnet ip list 用于单机模式
+	WriteList              []string     //telnet ip list
 	TcpPort                int
 	MaxConn                int
 	IntraMaxConn           int          //内部服务器最大连接数
@@ -78,6 +78,23 @@ func (this *GlobalObj)GetSafeTimer() *timer.SafeTimerScheduel{
 	return this.safeTimerScheduel
 }
 
+func (this *GlobalObj)Reload(){
+	//读取用户自定义配置
+	data, err := ioutil.ReadFile("conf/server.json")
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(data, this)
+	if err != nil {
+		panic(err)
+	}else{
+		//init safetimer
+		if GlobalObject.safeTimerScheduel == nil && GlobalObject.IsThreadSafeMode(){
+			GlobalObject.safeTimerScheduel = timer.NewSafeTimerScheduel()
+		}
+	}
+}
+
 var GlobalObject *GlobalObj
 
 func init() {
@@ -107,18 +124,5 @@ func init() {
 		OnClusterCClosed:       func(fconn iface.Iclient) {},
 		ProcessSignalChan:      make(chan os.Signal, 1),
 	}
-	//读取用户自定义配置
-	data, err := ioutil.ReadFile("conf/server.json")
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(data, &GlobalObject)
-	if err != nil {
-		panic(err)
-	}else{
-		//init safetimer
-		if GlobalObject.IsThreadSafeMode(){
-			GlobalObject.safeTimerScheduel = timer.NewSafeTimerScheduel()
-		}
-	}
+	GlobalObject.Reload()
 }
