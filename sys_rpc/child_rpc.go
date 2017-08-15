@@ -26,7 +26,7 @@ func (this *ChildRpc) RootTakeProxy(request *cluster.RpcRequest) {
 关闭节点信号
 */
 func (this *ChildRpc) CloseServer(request *cluster.RpcRequest){
-	delay := request.Rpcdata.Args[0].(float64)
+	delay := request.Rpcdata.Args[0].(int)
 	logger.Warn("server close kickdown.", delay, "second...")
 	time.Sleep(time.Duration(delay)*time.Second)
 	utils.GlobalObject.ProcessSignalChan <- os.Kill
@@ -36,7 +36,7 @@ func (this *ChildRpc) CloseServer(request *cluster.RpcRequest){
 重新加载配置文件
 */
 func (this *ChildRpc) ReloadConfig(request *cluster.RpcRequest){
-	delay := request.Rpcdata.Args[0].(float64)
+	delay := request.Rpcdata.Args[0].(int)
 	logger.Warn("server ReloadConfig kickdown.", delay, "second...")
 	time.Sleep(time.Duration(delay)*time.Second)
 	clusterserver.GlobalClusterServer.Cconf.Reload()
