@@ -50,12 +50,12 @@ func DoCCConnectionLost(fconn iface.Iclient) {
 //reconnected to master
 func ReConnectMasterCB(fconn iface.Iclient) {
 	rpc := cluster.NewChild(utils.GlobalObject.Name, GlobalClusterServer.MasterObj)
-	response, err := rpc.CallChildForResult("TakeProxy", utils.GlobalObject.Name)
+	response, err := rpc.CallChildForResult("MasterTakeProxy", utils.GlobalObject.Name)
 	if err == nil {
 		roots, ok := response.Result["roots"]
 		if ok {
-			for _, root := range roots.([]interface{}) {
-				GlobalClusterServer.ConnectToRemote(root.(string))
+			for _, root := range roots.([]string) {
+				GlobalClusterServer.ConnectToRemote(root)
 			}
 		}
 	} else {
@@ -108,9 +108,9 @@ func NewClusterServer(name, path string) *ClusterServer {
 	//telnet debug tool
 	if serverconf.DebugPort > 0{
 		if serverconf.Host != ""{
-			GlobalClusterServer.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", serverconf.Host, serverconf.DebugPort, 100, cluster.NewTelnetProtocol(serverconf.WriteList))
+			GlobalClusterServer.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", serverconf.Host, serverconf.DebugPort, 100, cluster.NewTelnetProtocol())
 		}else{
-			GlobalClusterServer.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", "127.0.0.1", serverconf.DebugPort, 100, cluster.NewTelnetProtocol(serverconf.WriteList))
+			GlobalClusterServer.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", "127.0.0.1", serverconf.DebugPort, 100, cluster.NewTelnetProtocol())
 		}
 	}
 	return GlobalClusterServer

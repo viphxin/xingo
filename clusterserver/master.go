@@ -45,9 +45,9 @@ func NewMaster(path string) *Master {
 	if GlobalMaster.Cconf.Master.DebugPort > 0{
 		if GlobalMaster.Cconf.Master.Host != ""{
 			GlobalMaster.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", GlobalMaster.Cconf.Master.Host,
-				GlobalMaster.Cconf.Master.DebugPort, 100, cluster.NewTelnetProtocol(GlobalMaster.Cconf.Master.WriteList))
+				GlobalMaster.Cconf.Master.DebugPort, 100, cluster.NewTelnetProtocol())
 		}else{
-			GlobalMaster.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", "127.0.0.1", GlobalMaster.Cconf.Master.DebugPort, 100, cluster.NewTelnetProtocol(GlobalMaster.Cconf.Master.WriteList))
+			GlobalMaster.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", "127.0.0.1", GlobalMaster.Cconf.Master.DebugPort, 100, cluster.NewTelnetProtocol())
 		}
 		logger.Info(fmt.Sprintf("telnet tool start: %s:%d.", GlobalMaster.Cconf.Master.Host, GlobalMaster.Cconf.Master.DebugPort))
 	}

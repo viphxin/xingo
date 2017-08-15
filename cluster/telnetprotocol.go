@@ -13,15 +13,13 @@ import (
 debug tool protocol
 */
 
-type TelnetProtocol struct {
-	writelist []string
-}
+type TelnetProtocol struct {}
 
-func NewTelnetProtocol(writelist []string) *TelnetProtocol {
+func NewTelnetProtocol() *TelnetProtocol {
 	if utils.GlobalObject.CmdInterpreter == nil{
 		utils.GlobalObject.CmdInterpreter = NewCommandInterpreter()
 	}
-	return &TelnetProtocol{writelist}
+	return &TelnetProtocol{}
 }
 
 func (this *TelnetProtocol) GetMsgHandle() iface.Imsghandle {
@@ -40,7 +38,7 @@ func (this *TelnetProtocol) InitWorker(poolsize int32) {
 }
 
 func (this *TelnetProtocol)isWriteListIP(ip string) bool{
-	for _, wip := range this.writelist{
+	for _, wip := range utils.GlobalObject.WriteList{
 		if strings.EqualFold(ip, wip){
 			return true
 		}

@@ -20,10 +20,10 @@ func NewXingoTcpServer() iface.Iserver{
 	if utils.GlobalObject.DebugPort > 0{
 		if utils.GlobalObject.Host != ""{
 			fserver.NewTcpServer("telnet_server", "tcp4", utils.GlobalObject.Host,
-				utils.GlobalObject.DebugPort, 100, cluster.NewTelnetProtocol(utils.GlobalObject.WriteList)).Start()
+				utils.GlobalObject.DebugPort, 100, cluster.NewTelnetProtocol()).Start()
 		}else{
 			fserver.NewTcpServer("telnet_server", "tcp4", "127.0.0.1",
-				utils.GlobalObject.DebugPort, 100, cluster.NewTelnetProtocol(utils.GlobalObject.WriteList)).Start()
+				utils.GlobalObject.DebugPort, 100, cluster.NewTelnetProtocol()).Start()
 		}
 		logger.Debug(fmt.Sprintf("telnet tool start: %s:%d.", utils.GlobalObject.Host, utils.GlobalObject.DebugPort))
 
