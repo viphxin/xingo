@@ -35,6 +35,8 @@ func (this *ConnectionMgr) Remove(conn iface.Iconnection) error {
 }
 
 func (this *ConnectionMgr) Get(sid uint32) (iface.Iconnection, error) {
+	this.conMrgLock.Lock()
+	defer this.conMrgLock.Unlock()
 	v, ok := this.connections[sid]
 	if ok {
 		delete(this.connections, sid)
@@ -45,6 +47,8 @@ func (this *ConnectionMgr) Get(sid uint32) (iface.Iconnection, error) {
 }
 
 func (this *ConnectionMgr) Len() int {
+	this.conMrgLock.Lock()
+	defer this.conMrgLock.Unlock()
 	return len(this.connections)
 }
 
