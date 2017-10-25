@@ -26,7 +26,7 @@ type Server struct {
 	IP            string
 	Port          int
 	MaxConn       int
-	GenNum        uint32
+	GenNum        *utils.UUIDGenerator
 	connectionMgr iface.Iconnectionmgr
 	Protoc        iface.IServerProtocol
 }
@@ -39,7 +39,8 @@ func NewServer() iface.Iserver {
 		Port:          utils.GlobalObject.TcpPort,
 		MaxConn:       utils.GlobalObject.MaxConn,
 		connectionMgr: fnet.NewConnectionMgr(),
-		Protoc: utils.GlobalObject.Protoc,
+		Protoc:        utils.GlobalObject.Protoc,
+		GenNum:        utils.NewUUIDGenerator(""),
 	}
 	utils.GlobalObject.TcpServer = s
 
@@ -54,7 +55,8 @@ func NewTcpServer(name string, version string, ip string, port int, maxConn int,
 		Port:          port,
 		MaxConn:       maxConn,
 		connectionMgr: fnet.NewConnectionMgr(),
-		Protoc: protoc,
+		Protoc:        protoc,
+		GenNum:        utils.NewUUIDGenerator(""),
 	}
 	utils.GlobalObject.TcpServer = s
 
@@ -62,16 +64,14 @@ func NewTcpServer(name string, version string, ip string, port int, maxConn int,
 }
 
 func (this *Server) handleConnection(conn *net.TCPConn) {
-	this.GenNum += 1
 	conn.SetNoDelay(true)
 	conn.SetKeepAlive(true)
 	// conn.SetDeadline(time.Now().Add(time.Minute * 2))
 	var fconn *fnet.Connection
 	if this.Protoc == nil{
-		fconn = fnet.NewConnection(conn, this.GenNum, utils.GlobalObject.Protoc)
-
+		fconn = fnet.NewConnection(conn, this.GenNum.GetUint32(), utils.GlobalObject.Protoc)
 	}else{
-		fconn = fnet.NewConnection(conn, this.GenNum, this.Protoc)
+		fconn = fnet.NewConnection(conn, this.GenNum.GetUint32(), this.Protoc)
 	}
 	fconn.SetProperty(fnet.XINGO_CONN_PROPERTY_NAME, this.Name)
 	fconn.Start()
