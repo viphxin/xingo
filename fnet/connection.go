@@ -9,6 +9,7 @@ import (
 	"net"
 	"sync"
 	"time"
+	"syscall"
 )
 
 const (
@@ -132,7 +133,10 @@ func (this *Connection) Send(data []byte) error {
 
 	if !this.isClosed {
 		if _, err := this.Conn.Write(data); err != nil {
-			logger.Error(fmt.Sprintf("send data error.reason: %s", err))
+			logger.Error(fmt.Sprintf("send data error.reason: %s.", err))
+			if  opErr, ok := err.(*net.OpError); ok && opErr.Err == syscall.EPIPE {
+				this.Conn.Close()
+			}
 			return err
 		}
 		return nil

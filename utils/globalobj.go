@@ -100,6 +100,7 @@ var GlobalObject *GlobalObj
 func init() {
 	GlobalObject = &GlobalObj{
 		TcpServers: make(map[string]iface.Iserver),
+		Name:                   "single_mode",
 		Host:                   "0.0.0.0",
 		TcpPort:                8109,
 		MaxConn:                12000,
