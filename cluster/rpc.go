@@ -55,7 +55,7 @@ func (this *XingoRpc) CallRpcForResult(target string, args ...interface{}) (*Rpc
 	rpcpackege, err := utils.GlobalObject.RpcCProtoc.GetDataPack().Pack(0, rpcdata)
 	if err == nil {
 		this.conn.Send(rpcpackege)
-		resp, err := asyncR.GetResult(5 * time.Second)
+		resp, err := asyncR.GetResult(2 * time.Second)
 		if err == nil {
 			return resp, nil
 		} else {

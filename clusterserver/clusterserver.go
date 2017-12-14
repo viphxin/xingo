@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"syscall"
 )
 
 type ClusterServer struct {
@@ -183,7 +184,9 @@ func (this *ClusterServer) StartClusterServer() {
 	}
 
 	//master
-	this.ConnectToMaster()
+	if !this.ConnectToMaster() {
+		return
+	}
 
 	logger.Info("xingo cluster start success.")
 	// close
@@ -204,13 +207,33 @@ func (this *ClusterServer) StartClusterServer() {
 }
 
 func (this *ClusterServer) WaitSignal() {
-	signal.Notify(utils.GlobalObject.ProcessSignalChan, os.Interrupt, os.Kill)
+	signal.Notify(utils.GlobalObject.ProcessSignalChan, os.Kill, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT)
 	sig := <-utils.GlobalObject.ProcessSignalChan
+	//尝试主动通知master checkalive
+	rpc := cluster.NewChild(utils.GlobalObject.Name, this.MasterObj)
+	rpc.CallChildNotForResult("ChildOffLine", utils.GlobalObject.Name)
 	logger.Info(fmt.Sprintf("server exit. signal: [%s]", sig))
 }
 
-func (this *ClusterServer) ConnectToMaster() {
-	master := fnet.NewReConnTcpClient(this.Cconf.Master.Host, this.Cconf.Master.RootPort, utils.GlobalObject.RpcCProtoc, 1024, 60, ReConnectMasterCB)
+func (this *ClusterServer) ConnectToMaster() bool{
+	//这里处理master还没开启的情况
+	master, err := fnet.NewReConnTcpClient(this.Cconf.Master.Host, this.Cconf.Master.RootPort,
+		utils.GlobalObject.RpcCProtoc, 1024, 60, ReConnectMasterCB)
+	if err != nil {
+		for i:=1; i<=1024; i++{
+			master, err = fnet.NewReConnTcpClient(this.Cconf.Master.Host, this.Cconf.Master.RootPort,
+				utils.GlobalObject.RpcCProtoc, 1024, 60, ReConnectMasterCB)
+			if err == nil {
+				break
+			}else{
+				logger.Warn(fmt.Sprintf("Can`t connected to Master.retry %d.", i))
+				time.Sleep(3*time.Second)
+			}
+		}
+	}
+	if master == nil {
+		return false
+	}
 	this.MasterObj = master
 	master.Start()
 	//注册到master
@@ -224,8 +247,10 @@ func (this *ClusterServer) ConnectToMaster() {
 			}
 		}
 	} else {
-		panic(fmt.Sprintf("connected to master error: %s", err))
+		logger.Error(fmt.Sprintf("connected to master error: %s", err))
+		return false
 	}
+	return true
 }
 
 func (this *ClusterServer) ConnectToRemote(rname string) {
@@ -233,7 +258,11 @@ func (this *ClusterServer) ConnectToRemote(rname string) {
 	if ok {
 		//处理master掉线，重新通知的情况
 		if _, err := this.GetRemote(rname); err != nil {
-			rserver := fnet.NewTcpClient(rserverconf.Host, rserverconf.RootPort, utils.GlobalObject.RpcCProtoc)
+			rserver, err := fnet.NewTcpClient(rserverconf.Host, rserverconf.RootPort, utils.GlobalObject.RpcCProtoc)
+			if err != nil {
+				logger.Error("ConnectToRemote Err: ", err)
+				return
+			}
 			this.RemoteNodesMgr.AddChild(rname, rserver)
 			rserver.Start()
 			rserver.SetProperty("remote", rname)

@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"time"
+	"syscall"
 )
 
 func init() {
@@ -162,7 +163,7 @@ func (this *Server) CallLoop(durations time.Duration, f func(v ...interface{}), 
 }
 
 func (this *Server) WaitSignal() {
-	signal.Notify(utils.GlobalObject.ProcessSignalChan, os.Interrupt, os.Kill)
+	signal.Notify(utils.GlobalObject.ProcessSignalChan, os.Kill, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT)
 	sig := <-utils.GlobalObject.ProcessSignalChan
 	logger.Info(fmt.Sprintf("server exit. signal: [%s]", sig))
 	this.Stop()

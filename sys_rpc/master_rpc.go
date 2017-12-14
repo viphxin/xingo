@@ -46,3 +46,16 @@ func (this *MasterTakeProxyRouter) Handle(request iface.IRpcRequest) {
 	}
 	return
 }
+
+
+//主动通知master 节点掉线
+type ChildOffLineRouter struct {
+	cluster.BaseRpcRouter
+}
+
+func (this *ChildOffLineRouter) Handle(request iface.IRpcRequest) {
+	name := request.GetArgs()[0].(string)
+	logger.Info("node " + name + " disconnected offline.")
+	clusterserver.GlobalMaster.CheckChildsAlive(true)
+}
+

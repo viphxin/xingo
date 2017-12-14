@@ -52,3 +52,34 @@ func (this *ReloadConfigRouter) Handle(request iface.IRpcRequest){
 	utils.GlobalObject.Reload()
 	logger.Info("reload config.")
 }
+
+/*
+检查节点是否下线
+*/
+type CheckAliveRouter struct {
+	cluster.BaseRpcRouter
+}
+
+func (this *CheckAliveRouter) Handle(request iface.IRpcRequest){
+	logger.Debug("CheckAlive!")
+	request.PushReturn("name", clusterserver.GlobalClusterServer.Name)
+	return
+}
+
+/*
+通知节点掉线（父节点或子节点）
+*/
+type NodeDownNtfRouter struct {
+	cluster.BaseRpcRouter
+}
+
+func (this *NodeDownNtfRouter) Handle(request iface.IRpcRequest){
+	isChild := request.GetArgs()[0].(bool)
+	nodeName := request.GetArgs()[1].(string)
+	logger.Debug(fmt.Sprintf("node %s down ntf.", nodeName))
+	if isChild {
+		clusterserver.GlobalClusterServer.RemoveChild(nodeName)
+	}else{
+		clusterserver.GlobalClusterServer.RemoveRemote(nodeName)
+	}
+}
