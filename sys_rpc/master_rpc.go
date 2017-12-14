@@ -45,3 +45,10 @@ func (this *MasterRpc) TakeProxy(request *cluster.RpcRequest) (response map[stri
 	}
 	return
 }
+
+//主动通知master 节点掉线
+func (this *MasterRpc) ChildOffLine(request *cluster.RpcRequest) {
+	name := request.Rpcdata.Args[0].(string)
+	logger.Info("node " + name + " disconnected offline.")
+	clusterserver.GlobalMaster.CheckChildsAlive(true)
+}

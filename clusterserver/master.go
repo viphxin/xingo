@@ -8,6 +8,11 @@ import (
 	"github.com/viphxin/xingo/logger"
 	"github.com/viphxin/xingo/utils"
 	"sync"
+	"time"
+)
+
+const (
+	KEEP_ALIVED_DURATION = 30 //s
 )
 
 type Master struct {
@@ -47,9 +52,11 @@ func NewMaster(path string) *Master {
 			GlobalMaster.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", GlobalMaster.Cconf.Master.Host,
 				GlobalMaster.Cconf.Master.DebugPort, 100, cluster.NewTelnetProtocol())
 		}else{
-			GlobalMaster.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", "127.0.0.1", GlobalMaster.Cconf.Master.DebugPort, 100, cluster.NewTelnetProtocol())
+			GlobalMaster.TelnetServer = fserver.NewTcpServer("telnet_server", "tcp4", "127.0.0.1",
+				GlobalMaster.Cconf.Master.DebugPort, 100, cluster.NewTelnetProtocol())
 		}
-		logger.Info(fmt.Sprintf("telnet tool start: %s:%d.", GlobalMaster.Cconf.Master.Host, GlobalMaster.Cconf.Master.DebugPort))
+		logger.Info(fmt.Sprintf("telnet tool start: %s:%d.",
+			GlobalMaster.Cconf.Master.Host, GlobalMaster.Cconf.Master.DebugPort))
 	}
 	return GlobalMaster
 }
@@ -71,6 +78,8 @@ func (this *Master) StartMaster() {
 	if GlobalMaster.TelnetServer != nil{
 		this.TelnetServer.Start()
 	}
+	//check node alive tick
+	s.CallLoop(KEEP_ALIVED_DURATION*time.Second, this.CheckChildsAlive, true)
 	s.Serve()
 }
 
@@ -96,4 +105,37 @@ func (this *Master) RemoveNode(name string) {
 	this.Childs.RemoveChild(name)
 	delete(this.OnlineNodes, name)
 
+}
+
+func (this *Master)CheckChildsAlive(params ...interface{}) {
+	childs := this.Childs.GetChilds()
+	for _, child := range childs {
+		_, err := child.CallChildForResult("CheckAlive")
+		if err == nil {
+			continue
+		}
+		//节点掉线通知child节点的父节点
+		remotes, err := GlobalMaster.Cconf.GetRemotesByName(child.GetName())
+		if err == nil && len(remotes) > 0 {
+			for _, remote := range remotes {
+				remoteProxy, err := GlobalMaster.Childs.GetChild(remote)
+				if err == nil {
+					//child是子节点 true
+					remoteProxy.CallChildNotForResult("NodeDownNtf", true, child.GetName())
+				}
+			}
+		}
+		//节点掉线通知child节点的子节点
+		curChilds := GlobalMaster.Cconf.GetChildsByName(child.GetName())
+		if len(curChilds) > 0 {
+			for _, curChild := range curChilds {
+				curChildProxy, err := GlobalMaster.Childs.GetChild(curChild)
+				if err == nil {
+					//child是父节点 false
+					curChildProxy.CallChildNotForResult("NodeDownNtf", false, child.GetName())
+				}
+			}
+		}
+		this.Childs.RemoveChild(child.GetName())
+	}
 }

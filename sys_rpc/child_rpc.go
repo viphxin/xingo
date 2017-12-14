@@ -43,3 +43,28 @@ func (this *ChildRpc) ReloadConfig(request *cluster.RpcRequest){
 	utils.GlobalObject.Reload()
 	logger.Info("reload config.")
 }
+
+
+/*
+检查节点是否下线
+*/
+func (this *ChildRpc) CheckAlive(request *cluster.RpcRequest)(response map[string]interface{}){
+	logger.Debug("CheckAlive!")
+	response = make(map[string]interface{})
+	response["name"] = clusterserver.GlobalClusterServer.Name
+	return
+}
+
+/*
+通知节点掉线（父节点或子节点）
+*/
+func (this *ChildRpc)NodeDownNtf(request *cluster.RpcRequest) {
+	isChild := request.Rpcdata.Args[0].(bool)
+	nodeName := request.Rpcdata.Args[1].(string)
+	logger.Debug(fmt.Sprintf("node %s down ntf.", nodeName))
+	if isChild {
+		clusterserver.GlobalClusterServer.RemoveChild(nodeName)
+	}else{
+		clusterserver.GlobalClusterServer.RemoveRemote(nodeName)
+	}
+}
