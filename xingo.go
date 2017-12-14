@@ -42,6 +42,7 @@ func NewXingoMater(cfg string) *clusterserver.Master{
 	s := clusterserver.NewMaster(cfg)
 	//add rpc
 	s.AddRpcRouter("MasterTakeProxy", &sys_rpc.MasterTakeProxyRouter{})
+	s.AddRpcRouter("ChildOffLine", &sys_rpc.ChildOffLineRouter{})
 	//add command
 	if utils.GlobalObject.CmdInterpreter != nil{
 		utils.GlobalObject.CmdInterpreter.AddCommand(telnetcmd.NewPprofCpuCommand())
@@ -58,6 +59,8 @@ func NewXingoCluterServer(nodename, cfg string) *clusterserver.ClusterServer{
 	s.AddRpcRouter("CloseServer", &sys_rpc.CloseServerRouter{})
 	s.AddRpcRouter("ReloadConfig", &sys_rpc.ReloadConfigRouter{})
 	s.AddRpcRouter("RootTakeProxy", &sys_rpc.RootTakeProxyRouter{})
+	s.AddRpcRouter("CheckAlive", &sys_rpc.CheckAliveRouter{})
+	s.AddRpcRouter("NodeDownNtf", &sys_rpc.NodeDownNtfRouter{})
 	//add cmd
 	if utils.GlobalObject.CmdInterpreter != nil{
 		utils.GlobalObject.CmdInterpreter.AddCommand(telnetcmd.NewPprofCpuCommand())

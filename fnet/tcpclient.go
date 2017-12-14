@@ -28,15 +28,18 @@ type TcpClient struct {
 }
 
 func NewReConnTcpClient(ip string, port int, protoc iface.IClientProtocol, maxRetry int,
-	retryInterval int, reconnCB func(iface.Iclient)) *TcpClient {
-	client := NewTcpClient(ip, port, protoc)
+	retryInterval int, reconnCB func(iface.Iclient)) (*TcpClient, error) {
+	client, err := NewTcpClient(ip, port, protoc)
+	if err != nil {
+		return nil, err
+	}
 	client.maxRetry = maxRetry
 	client.retryInterval = retryInterval
 	client.reconnCB = reconnCB
-	return client
+	return client, nil
 }
 
-func NewTcpClient(ip string, port int, protoc iface.IClientProtocol) *TcpClient {
+func NewTcpClient(ip string, port int, protoc iface.IClientProtocol) (*TcpClient, error) {
 	addr := &net.TCPAddr{
 		IP:   net.ParseIP(ip),
 		Port: port,
@@ -51,9 +54,9 @@ func NewTcpClient(ip string, port int, protoc iface.IClientProtocol) *TcpClient 
 			PropertyBag: make(map[string]interface{}, 0),
 		}
 		go client.protoc.OnConnectionMade(client)
-		return client
+		return client, nil
 	} else {
-		panic(err)
+		return nil, err
 	}
 
 }
