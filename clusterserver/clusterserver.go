@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"syscall"
 )
 
 type ClusterServer struct {
@@ -233,8 +234,12 @@ func (this *ClusterServer) StartClusterServer() {
 }
 
 func (this *ClusterServer) WaitSignal() {
-	signal.Notify(utils.GlobalObject.ProcessSignalChan, os.Interrupt, os.Kill)
+	signal.Notify(utils.GlobalObject.ProcessSignalChan, os.Kill, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT)
 	sig := <-utils.GlobalObject.ProcessSignalChan
+	//尝试主动通知master checkalive
+	rpc := cluster.NewChild(utils.GlobalObject.Name, this.MasterObj)
+	rpc.CallChildNotForResult("ChildOffLine", utils.GlobalObject.Name)
+
 	logger.Info(fmt.Sprintf("server exit. signal: [%s]", sig))
 }
 

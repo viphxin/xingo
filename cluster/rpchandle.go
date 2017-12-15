@@ -41,6 +41,9 @@ func (this *RpcMsgHandle) DoMsg(request *RpcRequest) {
 			st := time.Now()
 			if request.Rpcdata.MsgType == REQUEST_FORRESULT {
 				ret := f.Call([]reflect.Value{reflect.ValueOf(request)})
+				if len(ret) == 0 {
+					return
+				}
 				packdata, err := utils.GlobalObject.RpcCProtoc.GetDataPack().Pack(0, &RpcData{
 					MsgType: RESPONSE,
 					Result:  ret[0].Interface().(map[string]interface{}),
