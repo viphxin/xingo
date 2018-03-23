@@ -38,7 +38,7 @@ func NewXingoTcpServer() iface.Iserver{
 	return s
 }
 
-func NewXingoMater(cfg string) *clusterserver.Master{
+func NewXingoMaster(cfg string) *clusterserver.Master{
 	s := clusterserver.NewMaster(cfg)
 	//add rpc
 	s.AddRpcRouter("MasterTakeProxy", &sys_rpc.MasterTakeProxyRouter{})
