@@ -96,6 +96,7 @@ func (this *Server) Start() {
 			conn, err := ln.AcceptTCP()
 			if err != nil {
 				logger.Error(err)
+                                continue
 			}
 			//max client exceed
 			if this.connectionMgr.Len() >= utils.GlobalObject.MaxConn {
