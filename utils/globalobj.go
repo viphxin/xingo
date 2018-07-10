@@ -88,6 +88,7 @@ func (this *GlobalObj)Reload(){
 	if err != nil {
 		panic(err)
 	}else{
+		ReSettingLog()
 		//init safetimer
 		if GlobalObject.safeTimerScheduel == nil && GlobalObject.IsThreadSafeMode(){
 			GlobalObject.safeTimerScheduel = timer.NewSafeTimerScheduel()
@@ -110,7 +111,7 @@ func init() {
 		MaxLogNum:              10,
 		MaxFileSize:            100,
 		LogFileUnit:            logger.KB,
-		LogLevel:               logger.ERROR,
+		LogLevel:               logger.DEBUG,
 		SetToConsole:           true,
 		LogFileType:            1,
 		PoolSize:               10,

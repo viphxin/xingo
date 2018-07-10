@@ -57,6 +57,16 @@ func (this *HashWheel)Count() int{
 	return c
 }
 
+func (this *HashWheel)TotalCnt() int {
+      cnt := this.Count()
+      loopWheel := this.nextHashWheel
+     for loopWheel != nil {
+          cnt += loopWheel.Count()
+          loopWheel = loopWheel.nextHashWheel
+     }
+    return cnt     
+}
+
 func (this *HashWheel)_add2WheelChain(tid uint32, t *SafeTimer, forceNext bool) error{
 	defer func() error{
 		if err := recover(); err != nil{
@@ -82,7 +92,11 @@ func (this *HashWheel)_add2WheelChain(tid uint32, t *SafeTimer, forceNext bool) 
 			}
 		}
                 if !saved {
-         	     this.timerQueue[this.index][tid] = t 
+			if forceNext {
+				this.timerQueue[(this.index + 1)%this.level][tid] = t
+			}else{
+				this.timerQueue[this.index][tid] = t
+			}
                 }
 		return nil
 	}else{
