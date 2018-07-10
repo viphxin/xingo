@@ -82,7 +82,11 @@ func (this *HashWheel)_add2WheelChain(tid uint32, t *SafeTimer, forceNext bool) 
 			}
 		}
 		if !saved {
-			this.timerQueue[this.index][tid] = t
+			if forceNext {
+				this.timerQueue[(this.index+1)%this.level][tid] = t
+			}else{
+				this.timerQueue[this.index][tid] = t
+			}
 		}
 		return nil
 	}else{

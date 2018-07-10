@@ -13,10 +13,10 @@ import (
 const (
 	//默认安全时间调度器的容量
 	TIMERLEN = 2048
-	//默认最大误差值10毫秒
-	ERRORMAX = 10
+	//默认最大误差值100毫秒
+	ERRORMAX = 100
 	//默认最大触发队列缓冲大小
-	TRIGGERMAX = 1024
+	TRIGGERMAX = 2048
 	//默认hashwheel分级
 	LEVEL     =  12
 )
@@ -102,13 +102,13 @@ func (this *SafeTimerScheduel) StartScheduelLoop() {
 		//trigger
 		for _, v := range triggerList {
 			//logger.Debug("want call: ", v.unixts, ".real call: ", UnixTS(), ".ErrorMS: ", UnixTS()-v.unixts)
-			if math.Abs(float64(UnixTS()-v.unixts)) > float64(10){
+			if math.Abs(float64(UnixTS()-v.unixts)) > float64(ERRORMAX){
 				logger.Error("want call: ", v.unixts, ".real call: ", UnixTS(), ".ErrorMS: ", UnixTS()-v.unixts)
 			}
 			this.triggerChan <- v.delayCall
 		}
 
 		//wait for next loop
-		time.Sleep(ERRORMAX * time.Millisecond)
+		time.Sleep(ERRORMAX/2*time.Millisecond)
 	}
 }
