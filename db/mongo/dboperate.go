@@ -280,7 +280,7 @@ func (this *DbOperate) DBFindOne(collection string, cond interface{}, resHandler
 	m := make(bson.M)
 	if err := q.One(m); err != nil {
 		if mgo.ErrNotFound != err {
-			logger.Error(fmt.Sprintf("DBFindOne query falied,return error: %v; name: %v.", err, collection))
+			logger.Error(fmt.Sprintf("DBFindOne query failed,return error: %v; name: %v.", err, collection))
 		}
 		return err
 	}
@@ -309,7 +309,7 @@ func (this *DbOperate) StrongDBFindOne(collection string, cond interface{}, resH
 	m := make(bson.M)
 	if err := q.One(m); err != nil {
 		if mgo.ErrNotFound != err {
-			logger.Error(fmt.Sprintf("DBFindOne query falied, return error: %v; name: %v.", err, collection))
+			logger.Error(fmt.Sprintf("DBFindOne query failed, return error: %v; name: %v.", err, collection))
 		}
 		return err
 	}
