@@ -53,7 +53,7 @@ func (this *CommandInterpreter)Excute(rawCmdExp string) string{
 			logger.Error("invalid rawCmdExp: ", rawCmdExp)
 			return "invalid rawCmdExp: " + rawCmdExp
 		}
-		return "Unkown ERROR!!!"
+		return "Unknown ERROR!!!"
 	}()
 	if rawCmdExp == ""{
 		return ""
